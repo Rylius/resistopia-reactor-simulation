@@ -1,0 +1,35 @@
+{
+    "initial": {
+        "storage-matter": {
+            "matter": 100000000
+        },
+        "storage-antimatter": {
+            "antimatter": 100000000
+        }
+    },
+    "cooling": {
+        "reactor-heat": 250,
+        "distributor-heat": 100
+    },
+    "production": {
+        "reactor": {
+            "maxMatterInput": 1000,
+            "maxAntimatterInput": 1000,
+            "maxMatterConsumption": 500,
+            "maxAntimatterConsumption": 500,
+            "maxPowerGeneration": 500,
+            "maxHeatGeneration": 1000
+        },
+        "distributor-heat": {
+            "powerToHeatFactor": 2
+        }
+    },
+    "limits": {
+        "core": {
+            "powerRequired": 50
+        },
+        "base": {
+            "powerRequired": 75
+        }
+    }
+}
