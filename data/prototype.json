@@ -8,8 +8,7 @@
         }
     },
     "cooling": {
-        "reactor-heat": 250,
-        "distributor-heat": 100
+        "distributor": 100
     },
     "production": {
         "reactor": {
@@ -18,10 +17,16 @@
             "maxMatterConsumption": 500,
             "maxAntimatterConsumption": 500,
             "maxPowerGeneration": 500,
-            "maxHeatGeneration": 1000
+            "maxHeatGeneration": 1000,
+            "powerToHeatFactor": 2,
+            "heatTolerance": 2000,
+            "heatShutdownThreshold": 5000,
+            "shutdownDuration": 10
         },
-        "distributor-heat": {
-            "powerToHeatFactor": 2
+        "distributor": {
+            "powerToHeatFactor": 0.5,
+            "heatTolerance": 200,
+            "shutdownDuration": 10
         }
     },
     "limits": {

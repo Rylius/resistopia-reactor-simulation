@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Resistopia Reactor Simulation State Machines",
     "author": "Nils Günther <ryliusk@gmail.com>",
+    "license": "MIT",
     "private": true,
     "main": "src/index.js",
     "devDependencies": {

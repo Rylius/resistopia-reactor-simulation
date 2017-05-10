@@ -6,10 +6,12 @@ import prototype from '../data/prototype';
 const prototypeProgram = prototype();
 
 let state = createInitialState(prototypeProgram);
-state.stateMachines['storage-matter'].releasedMatterPerSecond = 500;
-state.stateMachines['storage-antimatter'].releasedAntimatterPerSecond = 500;
-state = update(prototypeProgram, state, 1);
-state = update(prototypeProgram, state, 1);
-state = update(prototypeProgram, state, 5);
-state = update(prototypeProgram, state, 1);
+state.stateMachines['storage-matter'].releasedMatterPerTick = 900;
+state.stateMachines['storage-antimatter'].releasedAntimatterPerTick = 900;
+state.stateMachines['reactor-cooling'].cooling = 0;
+for (let i = 0; i < 10; i++) {
+    state = update(prototypeProgram, state);
+    console.log('--------------------');
+}
+// state = update(prototypeProgram, state);
 console.log(state);

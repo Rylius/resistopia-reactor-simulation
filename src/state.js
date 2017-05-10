@@ -1,6 +1,7 @@
 export function createInitialState(program) {
     const state = {
         tick: 0,
+        seconds: 0,
         time: Date.now(),
         stateMachines: {},
         inputs: {},
@@ -19,10 +20,10 @@ export function createInitialState(program) {
     return state;
 }
 
-export function getInput(stateMachine, prevState, seconds) {
+export function getInput(stateMachine, prevState) {
     if (!stateMachine.input) {
         return {};
     }
 
-    return stateMachine.input(prevState, seconds);
+    return stateMachine.input(prevState);
 }

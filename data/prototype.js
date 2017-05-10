@@ -23,17 +23,16 @@ export default function () {
         initialState() {
             return {
                 matter: initial(storageMatter, 'matter', 100000000),
-                releasedMatterPerSecond: 0,
+                releasedMatterPerTick: 0,
                 releasedMatter: 0,
             }
         },
-        consumers: ['reactor'],
-        update(prevState, input, seconds) {
-            const releasedMatter = Math.min(prevState.releasedMatterPerSecond * seconds, prevState.matter);
+        update(prevState, input) {
+            const releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
             return {
                 matter: prevState.matter - releasedMatter,
+                releasedMatterPerTick: prevState.releasedMatterPerTick,
                 releasedMatter,
-                releasedMatterPerSecond: prevState.releasedMatterPerSecond,
             };
         },
     };
@@ -42,16 +41,16 @@ export default function () {
         initialState() {
             return {
                 antimatter: initial(storageAntimatter, 'antimatter', 100000000),
+                releasedAntimatterPerTick: 0,
                 releasedAntimatter: 0,
-                releasedAntimatterPerSecond: 0,
             }
         },
-        update(prevState, input, seconds) {
-            const releasedAntimatter = Math.min(prevState.releasedAntimatterPerSecond * seconds, prevState.antimatter);
+        update(prevState, input) {
+            const releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
             return {
                 antimatter: prevState.antimatter - releasedAntimatter,
+                releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
                 releasedAntimatter,
-                releasedAntimatterPerSecond: prevState.releasedAntimatterPerSecond,
             };
         },
     };
@@ -61,87 +60,146 @@ export default function () {
             return {
                 storedMatter: 0,
                 storedAntimatter: 0,
-                generatedHeat: 0,
-                generatedPower: 0,
+                shutdownRemaining: 0,
+                power: 0,
+                heat: 0,
             };
         },
-        input(prevState, seconds) {
-            const maxMatter = production(reactor, 'maxMatterInput', 1000) * seconds;
-            const maxAntimatter = production(reactor, 'maxAntimatterInput', 1000) * seconds;
+        input(prevState) {
+            const running = prevState.shutdownRemaining <= 0;
+
+            const maxMatter = production(reactor, 'maxMatterInput', 1000);
+            const maxAntimatter = production(reactor, 'maxAntimatterInput', 1000);
 
             return {
                 'storage-matter': {
                     property: 'releasedMatter',
                     as: 'matter',
-                    max: maxMatter,
+                    max: running ? maxMatter : 0,
                 },
                 'storage-antimatter': {
                     property: 'releasedAntimatter',
                     as: 'antimatter',
-                    max: maxAntimatter,
+                    max: running ? maxAntimatter : 0,
                 },
             };
         },
-        update(prevState, input, seconds) {
-            const requiredMatter = production(reactor, 'maxMatterConsumption', 100) * seconds;
-            const requiredAntimatter = production(reactor, 'maxAntimatterConsumption', 100) * seconds;
-            const powerGeneration = production(reactor, 'maxPowerGeneration', 100) * seconds;
-            const heatGeneration = production(reactor, 'maxHeatGeneration', 100) * seconds;
+        update(prevState, input) {
+            const requiredMatter = production(reactor, 'maxMatterConsumption', 100);
+            const requiredAntimatter = production(reactor, 'maxAntimatterConsumption', 100);
+            const powerGeneration = production(reactor, 'maxPowerGeneration', 100);
+            const heatGeneration = production(reactor, 'maxHeatGeneration', 100);
+
+            const powerToHeat = production(reactor, 'powerToHeatFactor', 1);
+
+            const heatTolerance = production(reactor, 'heatTolerance', 2000);
+            const heatShutdownThreshold = production(reactor, 'heatShutdownThreshold', 5000);
+
+            const shutdownDuration = production(reactor, 'shutdownDuration', 600);
 
             const state = {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
-                generatedPower: 0,
-                generatedHeat: 0,
+                shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
+                power: 0,
+                heat: prevState.heat + (prevState.power * powerToHeat),
             };
 
-            const availableMatter = Math.min(state.storedMatter, requiredMatter,);
-            const availableAntimatter = Math.min(state.storedAntimatter, requiredAntimatter,);
+            // Force full shutdown duration as long as reactor heat is above the threshold
+            if (state.heat > heatShutdownThreshold) {
+                state.shutdownRemaining = shutdownDuration;
+            }
 
-            const productivity = Math.max(
-                Math.min(
-                    availableMatter / requiredMatter,
-                    availableAntimatter / requiredAntimatter,
-                    1,
-                ),
-                0,
-            );
+            const running = state.shutdownRemaining <= 0;
+            if (running) {
+                const availableMatter = Math.min(state.storedMatter, requiredMatter,);
+                const availableAntimatter = Math.min(state.storedAntimatter, requiredAntimatter,);
 
-            const consumedMatter = requiredMatter * productivity;
-            const consumedAntimatter = requiredAntimatter * productivity;
+                let productivity = Math.max(
+                    Math.min(
+                        availableMatter / requiredMatter,
+                        availableAntimatter / requiredAntimatter,
+                        heatShutdownThreshold / heatGeneration,
+                        1,
+                    ),
+                    0,
+                );
 
-            state.storedMatter -= consumedMatter;
-            state.storedAntimatter -= consumedAntimatter;
+                const consumedMatter = requiredMatter * productivity;
+                const consumedAntimatter = requiredAntimatter * productivity;
 
-            state.generatedPower = powerGeneration * productivity;
-            state.generatedHeat = heatGeneration * productivity;
+                state.storedMatter -= consumedMatter;
+                state.storedAntimatter -= consumedAntimatter;
+
+                state.power += powerGeneration * productivity;
+                state.heat += heatGeneration * productivity;
+            }
 
             return state;
         },
     };
-    const reactorHeat = {
-        id: 'reactor-heat',
+    const reactorCooling = {
+        id: 'reactor-cooling',
         initialState() {
             return {
-                storedHeat: 0,
-                coolingPerSecond: cooling(reactorHeat, 100),
+                cooling: 0,
             };
         },
-        input(prevState, seconds) {
+        input(prevState) {
             return {
                 'reactor': {
-                    property: 'generatedHeat',
-                    as: 'heat',
+                    property: 'heat',
+                    max: prevState.cooling,
                 },
             };
         },
-        update(prevState, input, seconds) {
-            const state = {
-                storedHeat: prevState.storedHeat + input.heat,
-                coolingPerSecond: prevState.coolingPerSecond,
+        update(prevState, input) {
+            return {
+                cooling: prevState.cooling,
+            };
+        },
+    };
+    const distributor = {
+        id: 'distributor',
+        initialState() {
+            return {
+                cooling: cooling(distributor, 100),
+                power: 0,
+                heat: 0,
+                shutdownRemaining: 0,
+            };
+        },
+        input(prevState) {
+            const input = {
+                'reactor': {
+                    property: 'power',
+                },
             };
 
-            state.storedHeat -= Math.min(state.coolingPerSecond * seconds, state.storedHeat);
+            // Stop consuming power if we're overheated
+            if (prevState.shutdownRemaining > 0) {
+                input.reactor.max = 0;
+            }
+
+            return input;
+        },
+        update(prevState, input) {
+            const generatedHeat = prevState.power * production(distributor, 'powerToHeatFactor', 1);
+            const heatTolerance = production(distributor, 'heatTolerance', 200);
+            const shutdownDuration = production(distributor, 'shutdownDuration', 60);
+
+            const state = {
+                cooling: prevState.cooling,
+                power: input.power,
+                heat: prevState.heat + generatedHeat,
+                shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
+            };
+
+            state.heat -= Math.min(state.cooling, state.heat);
+
+            if (state.heat > heatTolerance) {
+                state.shutdownRemaining = shutdownDuration;
+            }
 
             return state;
         },
@@ -151,26 +209,23 @@ export default function () {
         initialState() {
             return {
                 powerRequired: limit(core, 'powerRequired', 100),
-                seconds: 1,
-                powerConsumedPerSecond: 0,
+                powerConsumed: 0,
                 powerSatisfaction: 0,
             };
         },
-        input(prevState, seconds) {
+        input(prevState) {
             return {
-                'reactor': {
-                    property: 'generatedPower',
-                    as: 'power',
-                    max: prevState.powerRequired * seconds,
+                'distributor': {
+                    property: 'power',
+                    max: prevState.powerRequired,
                 },
             };
         },
-        update(prevState, input, seconds) {
+        update(prevState, input) {
             return {
                 powerRequired: prevState.powerRequired,
-                seconds: seconds,
-                powerConsumedPerSecond: input.power / prevState.seconds,
-                powerSatisfaction: (prevState.powerConsumedPerSecond) / prevState.powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction: prevState.powerConsumed / prevState.powerRequired,
             };
         },
     };
@@ -179,64 +234,32 @@ export default function () {
         initialState() {
             return {
                 powerRequired: limit(base, 'powerRequired', 100),
-                seconds: 1,
-                powerConsumedPerSecond: 0,
+                powerConsumed: 0,
                 powerSatisfaction: 0,
             };
         },
-        input(prevState, seconds) {
+        input(prevState) {
             return {
-                'reactor': {
-                    property: 'generatedPower',
-                    as: 'power',
-                    max: prevState.powerRequired * seconds,
+                'distributor': {
+                    property: 'power',
+                    max: prevState.powerRequired,
                 },
             };
         },
-        update(prevState, input, seconds) {
+        update(prevState, input) {
             return {
                 powerRequired: prevState.powerRequired,
-                seconds: seconds,
-                powerConsumedPerSecond: input.power / prevState.seconds,
-                powerSatisfaction: (prevState.powerConsumedPerSecond) / prevState.powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction: prevState.powerConsumed / prevState.powerRequired,
             };
-        },
-    };
-    const distributorHeat = {
-        id: 'distributor-heat',
-        initialState() {
-            return {
-                coolingPerSecond: cooling(distributorHeat, 100),
-                heat: 0,
-            };
-        },
-        input(prevState, seconds) {
-            return {
-                'reactor': {
-                    property: 'generatedPower',
-                    as: 'power',
-                },
-            };
-        },
-        update(prevState, input, seconds) {
-            const generatedHeat = input.power * production(distributorHeat, 'powerToHeatFactor', 1);
-
-            const state = {
-                coolingPerSecond: prevState.coolingPerSecond,
-                heat: prevState.heat + generatedHeat,
-            };
-
-            state.heat -= Math.min(state.coolingPerSecond * seconds, state.heat);
-
-            return state;
         },
     };
 
     return {
         stateMachines: [
             storageMatter, storageAntimatter,
-            reactor, reactorHeat,
-            core, base, distributorHeat,
+            reactor, reactorCooling,
+            distributor, core, base,
         ],
     };
 }
