@@ -17,7 +17,7 @@ function parseInputSource(sourceState, source, input, parentId, sourceId) {
     const max = (typeof source.max === 'number') ? source.max : sourceState[source.property];
     const value = Math.min(sourceState[source.property], max);
 
-    console.log(`${parentId}.${targetProperty}: ${value} from ${sourceId}.${source.property} (${sourceState[source.property]})`);
+    // console.log(`${parentId}.${targetProperty}: ${value} from ${sourceId}.${source.property} (${sourceState[source.property]})`);
 
     if (!source.readOnly) {
         sourceState[source.property] -= value;
