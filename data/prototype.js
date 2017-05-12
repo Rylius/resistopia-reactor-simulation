@@ -30,7 +30,7 @@ export default function () {
         update(prevState, input) {
             const releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
             return {
-                matter: prevState.matter - releasedMatter,
+                matter: (prevState.matter - releasedMatter) + prevState.releasedMatter,
                 releasedMatterPerTick: prevState.releasedMatterPerTick,
                 releasedMatter,
             };
@@ -48,7 +48,7 @@ export default function () {
         update(prevState, input) {
             const releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
             return {
-                antimatter: prevState.antimatter - releasedAntimatter,
+                antimatter: (prevState.antimatter - releasedAntimatter) + prevState.releasedAntimatter, // Add back unused product
                 releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
                 releasedAntimatter,
             };
@@ -66,10 +66,13 @@ export default function () {
             };
         },
         input(prevState) {
+            const maxMatterInput = production(reactor, 'maxMatterInput', 1000);
+            const maxAntimatterInput = production(reactor, 'maxAntimatterInput', 1000);
+
             const running = prevState.shutdownRemaining <= 0;
 
-            const maxMatter = production(reactor, 'maxMatterInput', 1000);
-            const maxAntimatter = production(reactor, 'maxAntimatterInput', 1000);
+            const maxMatter = Math.min(Math.max(maxMatterInput - prevState.storedMatter, 0), maxMatterInput);
+            const maxAntimatter = Math.min(Math.max(maxAntimatterInput - prevState.storedAntimatter, 0), maxAntimatterInput);
 
             return {
                 'storage-matter': {
