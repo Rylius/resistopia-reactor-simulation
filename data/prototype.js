@@ -191,17 +191,20 @@ export default function () {
         initialState() {
             return {
                 cooling: 0,
-                effectiveness: 0,
+                effectiveCooling: 0,
+                powerRequired: 0,
+                powerConsumed: 0,
+                powerSatisfaction: 1,
             };
         },
         input(prevState) {
             const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
-            const requiredPower = prevState.cooling * powerToCooling;
+            const powerRequired = prevState.cooling * powerToCooling;
 
             return {
                 'distributor': {
                     property: 'power',
-                    max: requiredPower,
+                    max: powerRequired,
                 },
                 'reactor': {
                     property: 'heat',
@@ -211,15 +214,18 @@ export default function () {
         },
         update(prevState, input) {
             const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
-            const requiredPower = prevState.cooling * powerToCooling;
+            const powerRequired = prevState.cooling * powerToCooling;
 
             const active = prevState.cooling > 0;
-
-            const effectiveCooling = active ? prevState.cooling * (input.power / requiredPower) : 0;
+            const powerSatisfaction = active ? input.power / powerRequired : 1;
+            const effectiveCooling = active ? prevState.cooling * powerSatisfaction : 0;
 
             return {
                 cooling: prevState.cooling,
                 effectiveCooling,
+                powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction,
             };
         },
     };
@@ -277,8 +283,8 @@ export default function () {
     return {
         stateMachines: [
             storageMatter, storageAntimatter,
-            reactor, reactorCooling,
-            distributor, core, base,
+            reactor,
+            distributor, reactorCooling, core, base,
         ],
     };
 }

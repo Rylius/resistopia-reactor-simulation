@@ -29,7 +29,7 @@
             "shutdownDuration": 10
         },
         "reactor-cooling": {
-            "powerToCoolingFactor": 2
+            "powerToCoolingFactor": 3.75
         }
     },
     "limits": {
