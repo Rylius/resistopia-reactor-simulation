@@ -141,27 +141,6 @@ export default function () {
             return state;
         },
     };
-    const reactorCooling = {
-        id: 'reactor-cooling',
-        initialState() {
-            return {
-                cooling: 0,
-            };
-        },
-        input(prevState) {
-            return {
-                'reactor': {
-                    property: 'heat',
-                    max: prevState.cooling,
-                },
-            };
-        },
-        update(prevState, input) {
-            return {
-                cooling: prevState.cooling,
-            };
-        },
-    };
     const distributor = {
         id: 'distributor',
         initialState() {
@@ -205,6 +184,43 @@ export default function () {
             }
 
             return state;
+        },
+    };
+    const reactorCooling = {
+        id: 'reactor-cooling',
+        initialState() {
+            return {
+                cooling: 0,
+                effectiveness: 0,
+            };
+        },
+        input(prevState) {
+            const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
+            const requiredPower = prevState.cooling * powerToCooling;
+
+            return {
+                'distributor': {
+                    property: 'power',
+                    max: requiredPower,
+                },
+                'reactor': {
+                    property: 'heat',
+                    max: prevState.effectiveCooling,
+                },
+            };
+        },
+        update(prevState, input) {
+            const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
+            const requiredPower = prevState.cooling * powerToCooling;
+
+            const active = prevState.cooling > 0;
+
+            const effectiveCooling = active ? prevState.cooling * (input.power / requiredPower) : 0;
+
+            return {
+                cooling: prevState.cooling,
+                effectiveCooling,
+            };
         },
     };
     const core = {

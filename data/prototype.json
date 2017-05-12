@@ -27,6 +27,9 @@
             "powerToHeatFactor": 0.5,
             "heatTolerance": 200,
             "shutdownDuration": 10
+        },
+        "reactor-cooling": {
+            "powerToCoolingFactor": 2
         }
     },
     "limits": {
