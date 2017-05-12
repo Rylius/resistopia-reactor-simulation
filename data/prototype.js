@@ -198,13 +198,10 @@ export default function () {
             };
         },
         input(prevState) {
-            const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
-            const powerRequired = prevState.cooling * powerToCooling;
-
             return {
                 'distributor': {
                     property: 'power',
-                    max: powerRequired,
+                    max: prevState.powerRequired,
                 },
                 'reactor': {
                     property: 'heat',
@@ -213,8 +210,8 @@ export default function () {
             };
         },
         update(prevState, input) {
-            const powerToCooling = production(reactorCooling, 'powerToCoolingFactor', 1);
-            const powerRequired = prevState.cooling * powerToCooling;
+            const powerPerCooling = production(reactorCooling, 'powerPerCooling', 1);
+            const powerRequired = prevState.cooling * powerPerCooling;
 
             const active = prevState.cooling > 0;
             const powerSatisfaction = active ? input.power / powerRequired : 1;
