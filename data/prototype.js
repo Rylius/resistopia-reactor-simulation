@@ -100,12 +100,14 @@ export default function () {
 
             const shutdownDuration = production(reactor, 'shutdownDuration', 600);
 
+            const reactorCooling = cooling(reactor, 100);
+
             const state = {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 power: 0,
-                heat: prevState.heat + (prevState.power * powerToHeat),
+                heat: Math.max(prevState.heat + (prevState.power * powerToHeat) - reactorCooling, 0),
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold

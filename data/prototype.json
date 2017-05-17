@@ -8,6 +8,7 @@
         }
     },
     "cooling": {
+        "reactor": 100,
         "distributor": 100
     },
     "production": {
