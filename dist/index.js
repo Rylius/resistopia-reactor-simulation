@@ -7,7 +7,6 @@
 function createInitialState(program) {
     var state = {
         tick: 0,
-        seconds: 0,
         time: Date.now(),
         stateMachines: {},
         inputs: {}
