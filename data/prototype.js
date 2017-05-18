@@ -57,12 +57,14 @@ export default function () {
     const reactor = {
         id: 'reactor',
         initialState() {
+            const minTemperature = production(reactor, 'minTemperature', 25);
+
             return {
                 storedMatter: 0,
                 storedAntimatter: 0,
                 shutdownRemaining: 0,
                 power: 0,
-                heat: 0,
+                heat: minTemperature,
             };
         },
         input(prevState) {
@@ -95,8 +97,8 @@ export default function () {
 
             const powerToHeat = production(reactor, 'powerToHeatFactor', 1);
 
-            const heatTolerance = production(reactor, 'heatTolerance', 2000);
-            const heatShutdownThreshold = production(reactor, 'heatShutdownThreshold', 5000);
+            const minTemperature = production(reactor, 'minTemperature', 25);
+            const maxOperatingTemperature = production(reactor, 'maxOperatingTemperature', 5000);
 
             const shutdownDuration = production(reactor, 'shutdownDuration', 600);
 
@@ -107,11 +109,11 @@ export default function () {
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 power: 0,
-                heat: Math.max(prevState.heat + (prevState.power * powerToHeat) - reactorCooling, 0),
+                heat: Math.max(prevState.heat + (prevState.power * powerToHeat) - reactorCooling, minTemperature),
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
-            if (state.heat > heatShutdownThreshold) {
+            if (state.heat > maxOperatingTemperature) {
                 state.shutdownRemaining = shutdownDuration;
             }
 
@@ -124,7 +126,7 @@ export default function () {
                     Math.min(
                         availableMatter / requiredMatter,
                         availableAntimatter / requiredAntimatter,
-                        heatShutdownThreshold / heatGeneration,
+                        maxOperatingTemperature / heatGeneration,
                         1,
                     ),
                     0,
