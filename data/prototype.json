@@ -9,7 +9,7 @@
     },
     "cooling": {
         "reactor": 100,
-        "distributor": 100
+        "distributor": 50
     },
     "production": {
         "reactor": {
@@ -26,8 +26,9 @@
             "shutdownDuration": 10
         },
         "distributor": {
-            "powerToHeatFactor": 0.5,
-            "heatTolerance": 200,
+            "minTemperature": 30,
+            "maxTemperature": 200,
+            "powerToHeatFactor": 2,
             "shutdownDuration": 10
         },
         "reactor-cooling": {

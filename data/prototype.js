@@ -162,10 +162,12 @@ export default function () {
     const distributor = {
         id: 'distributor',
         initialState() {
+            const minTemperature = production(distributor, 'minTemperature', 30);
+
             return {
                 cooling: cooling(distributor, 100),
                 power: 0,
-                heat: 0,
+                heat: minTemperature,
                 shutdownRemaining: 0,
             };
         },
@@ -184,20 +186,19 @@ export default function () {
             return input;
         },
         update(prevState, input) {
+            const minTemperature = production(distributor, 'minTemperature', 30);
+            const maxTemperature = production(distributor, 'maxTemperature', 200);
             const generatedHeat = prevState.power * production(distributor, 'powerToHeatFactor', 1);
-            const heatTolerance = production(distributor, 'heatTolerance', 200);
             const shutdownDuration = production(distributor, 'shutdownDuration', 60);
 
             const state = {
                 cooling: prevState.cooling,
                 power: input.power,
-                heat: prevState.heat + generatedHeat,
+                heat: Math.max((prevState.heat + generatedHeat) - prevState.cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
             };
 
-            state.heat -= Math.min(state.cooling, state.heat);
-
-            if (state.heat > heatTolerance) {
+            if (state.heat > maxTemperature) {
                 state.shutdownRemaining = shutdownDuration;
             }
 
