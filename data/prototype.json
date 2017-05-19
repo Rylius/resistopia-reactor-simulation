@@ -20,8 +20,8 @@
             "minOptimalTemperature": 1000,
             "maxOptimalTemperature": 2000,
             "maxOperatingTemperature": 5000,
-            "maxPowerGeneration": 500,
-            "maxHeatGeneration": 1000,
+            "maxPowerGeneration": 300,
+            "maxHeatGeneration": 500,
             "powerToHeatFactor": 2,
             "shutdownDuration": 10
         },
