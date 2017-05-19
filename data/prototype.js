@@ -1,3 +1,5 @@
+import {clamp, normalizeRange} from '../src/util';
+
 import data from './prototype.json';
 
 function initial(stateMachine, property, defaultValue) {
@@ -98,6 +100,9 @@ export default function () {
             const powerToHeat = production(reactor, 'powerToHeatFactor', 1);
 
             const minTemperature = production(reactor, 'minTemperature', 25);
+            const minOperatingTemperature = production(reactor, 'minOperatingTemperature', 100);
+            const minOptimalTemperature = production(reactor, 'minOptimalTemperature', 1000);
+            const maxOptimalTemperature = production(reactor, 'maxOptimalTemperature', 2000);
             const maxOperatingTemperature = production(reactor, 'maxOperatingTemperature', 5000);
 
             const shutdownDuration = production(reactor, 'shutdownDuration', 600);
@@ -119,18 +124,27 @@ export default function () {
 
             const running = state.shutdownRemaining <= 0;
             if (running) {
-                const availableMatter = Math.min(state.storedMatter, requiredMatter,);
-                const availableAntimatter = Math.min(state.storedAntimatter, requiredAntimatter,);
+                const availableMatter = Math.min(state.storedMatter, requiredMatter);
+                const availableAntimatter = Math.min(state.storedAntimatter, requiredAntimatter);
 
-                let productivity = Math.max(
+                const productivity = Math.max(
                     Math.min(
                         availableMatter / requiredMatter,
                         availableAntimatter / requiredAntimatter,
-                        maxOperatingTemperature / heatGeneration,
                         1,
                     ),
                     0,
                 );
+
+                let heatEfficiency = 0;
+                if (state.heat < minOptimalTemperature) {
+                    heatEfficiency = normalizeRange(state.heat, minOperatingTemperature, minOptimalTemperature);
+                } else if (state.heat > maxOptimalTemperature) {
+                    heatEfficiency = 1 - normalizeRange(state.heat, maxOptimalTemperature, maxOperatingTemperature);
+                } else {
+                    heatEfficiency = 1;
+                }
+                heatEfficiency = clamp(heatEfficiency, 0, 1);
 
                 const consumedMatter = requiredMatter * productivity;
                 const consumedAntimatter = requiredAntimatter * productivity;
@@ -138,7 +152,7 @@ export default function () {
                 state.storedMatter -= consumedMatter;
                 state.storedAntimatter -= consumedAntimatter;
 
-                state.power += powerGeneration * productivity;
+                state.power += powerGeneration * heatEfficiency;
                 state.heat += heatGeneration * productivity;
             }
 
