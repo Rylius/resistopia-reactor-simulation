@@ -13,10 +13,8 @@
     },
     "production": {
         "reactor": {
-            "maxMatterInput": 1000,
-            "maxAntimatterInput": 1000,
-            "maxMatterConsumption": 500,
-            "maxAntimatterConsumption": 500,
+            "maxMatterInput": 500,
+            "maxAntimatterInput": 500,
             "minTemperature": 25,
             "minOperatingTemperature": 100,
             "minOptimalTemperature": 1000,

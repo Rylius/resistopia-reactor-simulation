@@ -70,8 +70,8 @@ export default function () {
             };
         },
         input(prevState) {
-            const maxMatterInput = production(reactor, 'maxMatterInput', 1000);
-            const maxAntimatterInput = production(reactor, 'maxAntimatterInput', 1000);
+            const maxMatterInput = production(reactor, 'maxMatterInput', 500);
+            const maxAntimatterInput = production(reactor, 'maxAntimatterInput', 500);
 
             const running = prevState.shutdownRemaining <= 0;
 
@@ -92,8 +92,8 @@ export default function () {
             };
         },
         update(prevState, input) {
-            const requiredMatter = production(reactor, 'maxMatterConsumption', 100);
-            const requiredAntimatter = production(reactor, 'maxAntimatterConsumption', 100);
+            const requiredMatter = production(reactor, 'maxMatterInput', 500);
+            const requiredAntimatter = production(reactor, 'maxAntimatterInput', 500);
             const powerGeneration = production(reactor, 'maxPowerGeneration', 100);
             const heatGeneration = production(reactor, 'maxHeatGeneration', 100);
 
