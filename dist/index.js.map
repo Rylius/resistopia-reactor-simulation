@@ -1,0 +1,1 @@
+{"version":3,"sources":["../src/index.js"],"names":[],"mappings":";;;;;;AAAA;;AACA;;;;;;kBAEe;AACX,iDADW;AAEX;AAFW,C","file":"index.js","sourcesContent":["import {createInitialState} from '../src/state';\nimport update from '../src/update';\n\nexport default {\n    createInitialState,\n    update,\n};\n"]}
