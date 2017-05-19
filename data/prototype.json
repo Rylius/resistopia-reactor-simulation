@@ -8,7 +8,7 @@
         }
     },
     "cooling": {
-        "reactor": 100,
+        "reactor": 50,
         "distributor": 50
     },
     "production": {
@@ -21,7 +21,7 @@
             "maxOptimalTemperature": 2000,
             "maxOperatingTemperature": 5000,
             "maxPowerGeneration": 300,
-            "maxHeatGeneration": 500,
+            "maxHeatGeneration": 200,
             "powerToHeatFactor": 2,
             "shutdownDuration": 10
         },
