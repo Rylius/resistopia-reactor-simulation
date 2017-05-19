@@ -152,7 +152,7 @@ export default function () {
                 state.storedMatter -= consumedMatter;
                 state.storedAntimatter -= consumedAntimatter;
 
-                state.power += powerGeneration * heatEfficiency;
+                state.power += powerGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
             }
 
