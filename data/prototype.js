@@ -22,6 +22,13 @@ export default function () {
 
     const storageMatter = {
         id: 'storage-matter',
+        public: {
+            releasedMatterPerTick: {
+                min: 0,
+                max: 500,
+            },
+        },
+        output: ['releasedMatter'],
         initialState() {
             return {
                 matter: initial(storageMatter, 'matter', 100000000),
@@ -40,6 +47,13 @@ export default function () {
     };
     const storageAntimatter = {
         id: 'storage-antimatter',
+        public: {
+            releasedAntimatterPerTick: {
+                min: 0,
+                max: 500,
+            },
+        },
+        output: ['releasedAntimatter'],
         initialState() {
             return {
                 antimatter: initial(storageAntimatter, 'antimatter', 100000000),
@@ -58,6 +72,7 @@ export default function () {
     };
     const reactor = {
         id: 'reactor',
+        output: ['power', 'heat'],
         initialState() {
             const minTemperature = production(reactor, 'minTemperature', 25);
 
@@ -161,6 +176,7 @@ export default function () {
     };
     const distributor = {
         id: 'distributor',
+        output: ['power'],
         initialState() {
             const minTemperature = production(distributor, 'minTemperature', 30);
 
@@ -207,6 +223,12 @@ export default function () {
     };
     const reactorCooling = {
         id: 'reactor-cooling',
+        public: {
+            cooling: {
+                min: 0,
+                max: 200,
+            },
+        },
         initialState() {
             return {
                 cooling: 0,

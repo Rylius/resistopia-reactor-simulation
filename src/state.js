@@ -3,6 +3,7 @@ export function createInitialState(program) {
         tick: 0,
         time: Date.now(),
         stateMachines: {},
+        outputs: {},
         inputs: {},
     };
 
