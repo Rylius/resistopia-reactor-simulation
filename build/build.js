@@ -6,7 +6,7 @@ rollup.rollup({
     entry: 'src/index.js',
     plugins: [
         json({preferConst: true}),
-        babel({babelrc: false, presets: ['babel-preset-es2015-rollup']}),
+        babel({babelrc: false, presets: ['babel-preset-es2015-rollup', 'flow']}),
     ],
 }).then(function (bundle) {
     bundle.write({
