@@ -9,6 +9,7 @@ function createInitialState(program) {
         tick: 0,
         time: Date.now(),
         stateMachines: {},
+        outputs: {},
         inputs: {}
     };
 
@@ -91,6 +92,22 @@ function update(program, prevState) {
     return state;
 }
 
+function clean(program) {
+    program.stateMachines.forEach(function (stateMachine) {
+        if (!stateMachine.public) {
+            stateMachine.public = {};
+        }
+
+        if (!stateMachine.output) {
+            stateMachine.output = [];
+        }
+    });
+}
+
+function validate(program) {
+    // TODO
+}
+
 function normalizeRange(value, min, max) {
     return (value - min) / (max - min);
 }
@@ -130,6 +147,13 @@ var prototype = function () {
 
     var storageMatter = {
         id: 'storage-matter',
+        public: {
+            releasedMatterPerTick: {
+                min: 0,
+                max: 500
+            }
+        },
+        output: ['releasedMatter'],
         initialState: function initialState() {
             return {
                 matter: initial$$1(storageMatter, 'matter', 100000000),
@@ -148,6 +172,13 @@ var prototype = function () {
     };
     var storageAntimatter = {
         id: 'storage-antimatter',
+        public: {
+            releasedAntimatterPerTick: {
+                min: 0,
+                max: 500
+            }
+        },
+        output: ['releasedAntimatter'],
         initialState: function initialState() {
             return {
                 antimatter: initial$$1(storageAntimatter, 'antimatter', 100000000),
@@ -166,6 +197,7 @@ var prototype = function () {
     };
     var reactor = {
         id: 'reactor',
+        output: ['power', 'heat'],
         initialState: function initialState() {
             var minTemperature = production$$1(reactor, 'minTemperature', 25);
 
@@ -262,6 +294,7 @@ var prototype = function () {
     };
     var distributor = {
         id: 'distributor',
+        output: ['power'],
         initialState: function initialState() {
             var minTemperature = production$$1(distributor, 'minTemperature', 30);
 
@@ -308,6 +341,12 @@ var prototype = function () {
     };
     var reactorCooling = {
         id: 'reactor-cooling',
+        public: {
+            cooling: {
+                min: 0,
+                max: 200
+            }
+        },
         initialState: function initialState() {
             return {
                 cooling: 0,
@@ -402,12 +441,21 @@ var prototype = function () {
     };
 };
 
+var programs = {
+    Prototype: prototype()
+};
+
+Object.keys(programs).forEach(function (id) {
+    var program = programs[id];
+
+    clean(program);
+    validate(program);
+});
+
 var index = {
     createInitialState: createInitialState,
     update: update,
-    Program: {
-        Prototype: prototype
-    }
+    Program: programs
 };
 
 return index;
