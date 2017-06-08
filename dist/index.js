@@ -4,6 +4,7 @@
 	(global['resistopia-reactor-simulation'] = factory());
 }(this, (function () { 'use strict';
 
+// FIXME Should be number, but Flow keeps complaining for whatever reason
 function createInitialState(program) {
     var state = {
         tick: 0,
@@ -20,43 +21,82 @@ function createInitialState(program) {
             state.stateMachines[stateMachine.id] = {};
         }
 
-        state.inputs[stateMachine.id] = getInput(stateMachine, state, 0);
+        state.outputs[stateMachine.id] = {};
+
+        state.inputs[stateMachine.id] = inputRequestsFor(stateMachine, state);
     });
 
     return state;
 }
 
-function getInput(stateMachine, prevState) {
+function inputRequestsFor(stateMachine, prevState) {
     if (!stateMachine.input) {
-        return {};
+        return [];
     }
 
     return stateMachine.input(prevState);
 }
 
-function parseInput(prevState, state, stateMachine) {
-    var input = {};
+var toConsumableArray = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
 
-    var inputSources = state.inputs[stateMachine.id];
-    Object.keys(inputSources).forEach(function (sourceId) {
-        var sourceState = state.stateMachines[sourceId] || prevState.stateMachines[sourceId];
-        parseInputSource(sourceState, inputSources[sourceId], input, stateMachine.id, sourceId);
-    });
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
+};
 
-    return input;
+function failInputRequest(stateMachine, request, message) {
+    return new Error('Failed to process input request of "' + stateMachine.id + '" for "' + request.stateMachine + '.' + request.property + '": ' + message);
 }
 
-function parseInputSource(sourceState, source, input, parentId, sourceId) {
-    var targetProperty = source.as || source.property;
-    var max = typeof source.max === 'number' ? source.max : sourceState[source.property];
-    var value = Math.min(sourceState[source.property], max);
+function inputRequestComparator(a, b) {
+    var priorityA = typeof a.priority === 'undefined' ? 0 : a.priority;
+    var priorityB = typeof b.priority === 'undefined' ? 0 : b.priority;
 
-    // console.log(`${parentId}.${targetProperty}: ${value} from ${sourceId}.${source.property} (${sourceState[source.property]})`);
-
-    if (!source.readOnly) {
-        sourceState[source.property] -= value;
+    if (priorityA === priorityB) {
+        return 0;
     }
-    input[targetProperty] = value;
+    return priorityA < priorityB ? 1 : -1;
+}
+
+function processInputRequests(program, outputs, inputRequests, inputs) {
+    inputRequests.forEach(function (request) {
+        var stateMachine = request._target;
+        if (!stateMachine) {
+            throw new Error('Invalid input request: No target set');
+        }
+
+        var sourceStateMachine = program.stateMachines.find(function (machine) {
+            return machine.id === request.stateMachine;
+        });
+        if (!sourceStateMachine) {
+            throw failInputRequest(stateMachine, request, 'Source state machine does not exist');
+        }
+        if (!sourceStateMachine.output || !sourceStateMachine.output.includes(request.property)) {
+            throw failInputRequest(stateMachine, request, 'Requested property is not declared as an output property');
+        }
+
+        var output = outputs[request.stateMachine];
+        if (!output) {
+            throw failInputRequest(stateMachine, request, 'Source state machine did not produce any output');
+        }
+        var outputValue = output[request.property];
+        if (typeof outputValue === 'undefined') {
+            throw failInputRequest(stateMachine, request, 'Source state machine did not produce output for requested property');
+        }
+
+        var max = typeof request.max === 'number' ? request.max : outputValue;
+        var value = Math.min(outputValue, max);
+
+        output[request.property] -= value;
+
+        var targetProperty = request.as || request.property;
+        inputs[stateMachine.id][targetProperty] = value;
+
+        // console.log(`${stateMachine.id} consumed ${value} from ${sourceStateMachine.id}.${request.property} as ${targetProperty}`);
+    });
 }
 
 function update(program, prevState) {
@@ -64,11 +104,43 @@ function update(program, prevState) {
         tick: prevState.tick + 1,
         time: Date.now(),
         stateMachines: {},
+        outputs: {},
         inputs: {}
     };
 
+    var outputs = {};
+    var inputs = {};
+    var allInputRequests = [];
     program.stateMachines.forEach(function (stateMachine) {
-        state.inputs[stateMachine.id] = getInput(stateMachine, prevState.stateMachines[stateMachine.id]);
+        // Gather all input requests this state machine created
+        var requests = inputRequestsFor(stateMachine, prevState.stateMachines[stateMachine.id]);
+        requests.forEach(function (request) {
+            return request._target = stateMachine;
+        });
+        allInputRequests.push.apply(allInputRequests, toConsumableArray(requests));
+
+        inputs[stateMachine.id] = {};
+
+        if (!stateMachine.output) {
+            return;
+        }
+
+        // Copy output properties from previous tick
+        outputs[stateMachine.id] = {};
+        // $FlowFixMe
+        stateMachine.output.forEach(function (property) {
+            outputs[stateMachine.id][property] = prevState.stateMachines[stateMachine.id][property];
+        });
+    });
+
+    // Process input requests
+    program.stateMachines.forEach(function (stateMachine) {
+        var requests = allInputRequests.filter(function (request) {
+            return request.stateMachine === stateMachine.id;
+        }) // Group by source state machine
+        .sort(inputRequestComparator); // Sort by priority
+
+        processInputRequests(program, outputs, requests, inputs);
     });
 
     program.stateMachines.forEach(function (stateMachine) {
@@ -78,9 +150,7 @@ function update(program, prevState) {
             return;
         }
 
-        var input = parseInput(prevState, state, stateMachine);
-
-        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], input);
+        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], inputs[stateMachine.id]);
     });
 
     // console.log(`tick ${state.tick}`);
@@ -90,22 +160,6 @@ function update(program, prevState) {
     // console.log('=================');
 
     return state;
-}
-
-function clean(program) {
-    program.stateMachines.forEach(function (stateMachine) {
-        if (!stateMachine.public) {
-            stateMachine.public = {};
-        }
-
-        if (!stateMachine.output) {
-            stateMachine.output = [];
-        }
-    });
-}
-
-function validate(program) {
-    // TODO
 }
 
 function normalizeRange(value, min, max) {
@@ -161,10 +215,18 @@ var prototype = function () {
                 releasedMatter: 0
             };
         },
+        input: function input(prevState) {
+            return [{
+                stateMachine: 'storage-matter',
+                property: 'releasedMatter',
+                as: 'unusedMatter',
+                priority: -100
+            }];
+        },
         update: function update(prevState, input) {
             var releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
             return {
-                matter: prevState.matter - releasedMatter + prevState.releasedMatter,
+                matter: prevState.matter - releasedMatter + input.unusedMatter,
                 releasedMatterPerTick: prevState.releasedMatterPerTick,
                 releasedMatter: releasedMatter
             };
@@ -186,10 +248,18 @@ var prototype = function () {
                 releasedAntimatter: 0
             };
         },
+        input: function input(prevState) {
+            return [{
+                stateMachine: 'storage-antimatter',
+                property: 'releasedAntimatter',
+                as: 'unusedAntimatter',
+                priority: -100
+            }];
+        },
         update: function update(prevState, input) {
             var releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
             return {
-                antimatter: prevState.antimatter - releasedAntimatter + prevState.releasedAntimatter, // Add back unused product
+                antimatter: prevState.antimatter - releasedAntimatter + input.unusedAntimatter,
                 releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
                 releasedAntimatter: releasedAntimatter
             };
@@ -218,18 +288,25 @@ var prototype = function () {
             var maxMatter = Math.min(Math.max(maxMatterInput - prevState.storedMatter, 0), maxMatterInput);
             var maxAntimatter = Math.min(Math.max(maxAntimatterInput - prevState.storedAntimatter, 0), maxAntimatterInput);
 
-            return {
-                'storage-matter': {
-                    property: 'releasedMatter',
-                    as: 'matter',
-                    max: running ? maxMatter : 0
-                },
-                'storage-antimatter': {
-                    property: 'releasedAntimatter',
-                    as: 'antimatter',
-                    max: running ? maxAntimatter : 0
-                }
-            };
+            return [{
+                stateMachine: 'storage-matter',
+                property: 'releasedMatter',
+                as: 'matter',
+                max: running ? maxMatter : 0
+            }, {
+                stateMachine: 'storage-antimatter',
+                property: 'releasedAntimatter',
+                as: 'antimatter',
+                max: running ? maxAntimatter : 0
+            }, {
+                stateMachine: 'reactor',
+                property: 'power',
+                priority: -100
+            }, {
+                stateMachine: 'reactor',
+                property: 'heat',
+                priority: -100
+            }];
         },
         update: function update(prevState, input) {
             var requiredMatter = production$$1(reactor, 'maxMatterInput', 500);
@@ -254,7 +331,7 @@ var prototype = function () {
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 power: 0,
-                heat: Math.max(prevState.heat + prevState.power * powerToHeat - reactorCooling, minTemperature)
+                heat: Math.max(input.heat + input.power * powerToHeat - reactorCooling, minTemperature)
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
@@ -294,7 +371,7 @@ var prototype = function () {
     };
     var distributor = {
         id: 'distributor',
-        output: ['power'],
+        output: ['power', 'heat'],
         initialState: function initialState() {
             var minTemperature = production$$1(distributor, 'minTemperature', 30);
 
@@ -306,15 +383,26 @@ var prototype = function () {
             };
         },
         input: function input(prevState) {
-            var input = {
-                'reactor': {
-                    property: 'power'
-                }
-            };
+            var input = [{
+                stateMachine: reactor.id,
+                property: 'power',
+                max: Infinity,
+                priority: 100
+            }, {
+                stateMachine: distributor.id,
+                property: 'power',
+                as: 'unusedPower',
+                priority: -100
+            }, {
+                stateMachine: distributor.id,
+                property: 'heat',
+                priority: 100
+            }];
 
             // Stop consuming power if we're overheated
             if (prevState.shutdownRemaining > 0) {
-                input.reactor.max = 0;
+                // FIXME
+                input[0].max = 0;
             }
 
             return input;
@@ -322,13 +410,13 @@ var prototype = function () {
         update: function update(prevState, input) {
             var minTemperature = production$$1(distributor, 'minTemperature', 30);
             var maxTemperature = production$$1(distributor, 'maxTemperature', 200);
-            var generatedHeat = prevState.power * production$$1(distributor, 'powerToHeatFactor', 1);
+            var generatedHeat = input.unusedPower * production$$1(distributor, 'powerToHeatFactor', 1);
             var shutdownDuration = production$$1(distributor, 'shutdownDuration', 60);
 
             var state = {
                 cooling: prevState.cooling,
                 power: input.power,
-                heat: Math.max(prevState.heat + generatedHeat - prevState.cooling, minTemperature),
+                heat: Math.max(input.heat + generatedHeat - prevState.cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0)
             };
 
@@ -357,16 +445,15 @@ var prototype = function () {
             };
         },
         input: function input(prevState) {
-            return {
-                'distributor': {
-                    property: 'power',
-                    max: prevState.powerRequired
-                },
-                'reactor': {
-                    property: 'heat',
-                    max: prevState.effectiveCooling
-                }
-            };
+            return [{
+                stateMachine: distributor.id,
+                property: 'power',
+                max: prevState.powerRequired
+            }, {
+                stateMachine: reactor.id,
+                property: 'heat',
+                max: prevState.effectiveCooling
+            }];
         },
         update: function update(prevState, input) {
             var powerPerCooling = production$$1(reactorCooling, 'powerPerCooling', 1);
@@ -395,12 +482,11 @@ var prototype = function () {
             };
         },
         input: function input(prevState) {
-            return {
-                'distributor': {
-                    property: 'power',
-                    max: prevState.powerRequired
-                }
-            };
+            return [{
+                stateMachine: distributor.id,
+                property: 'power',
+                max: prevState.powerRequired
+            }];
         },
         update: function update(prevState, input) {
             return {
@@ -420,12 +506,11 @@ var prototype = function () {
             };
         },
         input: function input(prevState) {
-            return {
-                'distributor': {
-                    property: 'power',
-                    max: prevState.powerRequired
-                }
-            };
+            return [{
+                stateMachine: distributor.id,
+                property: 'power',
+                max: prevState.powerRequired
+            }];
         },
         update: function update(prevState, input) {
             return {
@@ -441,21 +526,12 @@ var prototype = function () {
     };
 };
 
-var programs = {
-    Prototype: prototype()
-};
-
-Object.keys(programs).forEach(function (id) {
-    var program = programs[id];
-
-    clean(program);
-    validate(program);
-});
-
 var index = {
     createInitialState: createInitialState,
     update: update,
-    Program: programs
+    Program: {
+        Prototype: prototype()
+    }
 };
 
 return index;

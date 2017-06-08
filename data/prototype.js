@@ -1,24 +1,28 @@
+// @flow
+
+import type {Program} from '../src/program';
+
 import {clamp, normalizeRange} from '../src/util';
 
 import data from './prototype.json';
 
-function initial(stateMachine, property, defaultValue) {
+function initial(stateMachine, property, defaultValue): number {
     return (data.initial[stateMachine.id] || {})[property] || defaultValue;
 }
 
-function cooling(stateMachine, defaultValue) {
+function cooling(stateMachine, defaultValue): number {
     return data.cooling[stateMachine.id] || defaultValue;
 }
 
-function production(stateMachine, property, defaultValue) {
+function production(stateMachine, property, defaultValue): number {
     return (data.production[stateMachine.id] || {})[property] || defaultValue;
 }
 
-function limit(stateMachine, property, defaultValue) {
+function limit(stateMachine, property, defaultValue): number {
     return (data.limits[stateMachine.id] || {})[property] || defaultValue;
 }
 
-export default function () {
+export default function (): Program {
 
     const storageMatter = {
         id: 'storage-matter',
@@ -36,10 +40,20 @@ export default function () {
                 releasedMatter: 0,
             }
         },
+        input(prevState) {
+            return [
+                {
+                    stateMachine: 'storage-matter',
+                    property: 'releasedMatter',
+                    as: 'unusedMatter',
+                    priority: -100,
+                },
+            ];
+        },
         update(prevState, input) {
             const releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
             return {
-                matter: (prevState.matter - releasedMatter) + prevState.releasedMatter,
+                matter: (prevState.matter - releasedMatter) + input.unusedMatter,
                 releasedMatterPerTick: prevState.releasedMatterPerTick,
                 releasedMatter,
             };
@@ -61,10 +75,20 @@ export default function () {
                 releasedAntimatter: 0,
             }
         },
+        input(prevState) {
+            return [
+                {
+                    stateMachine: 'storage-antimatter',
+                    property: 'releasedAntimatter',
+                    as: 'unusedAntimatter',
+                    priority: -100,
+                },
+            ];
+        },
         update(prevState, input) {
             const releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
             return {
-                antimatter: (prevState.antimatter - releasedAntimatter) + prevState.releasedAntimatter, // Add back unused product
+                antimatter: (prevState.antimatter - releasedAntimatter) + input.unusedAntimatter,
                 releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
                 releasedAntimatter,
             };
@@ -93,18 +117,30 @@ export default function () {
             const maxMatter = Math.min(Math.max(maxMatterInput - prevState.storedMatter, 0), maxMatterInput);
             const maxAntimatter = Math.min(Math.max(maxAntimatterInput - prevState.storedAntimatter, 0), maxAntimatterInput);
 
-            return {
-                'storage-matter': {
+            return [
+                {
+                    stateMachine: 'storage-matter',
                     property: 'releasedMatter',
                     as: 'matter',
                     max: running ? maxMatter : 0,
                 },
-                'storage-antimatter': {
+                {
+                    stateMachine: 'storage-antimatter',
                     property: 'releasedAntimatter',
                     as: 'antimatter',
                     max: running ? maxAntimatter : 0,
                 },
-            };
+                {
+                    stateMachine: 'reactor',
+                    property: 'power',
+                    priority: -100,
+                },
+                {
+                    stateMachine: 'reactor',
+                    property: 'heat',
+                    priority: -100,
+                },
+            ];
         },
         update(prevState, input) {
             const requiredMatter = production(reactor, 'maxMatterInput', 500);
@@ -129,7 +165,7 @@ export default function () {
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 power: 0,
-                heat: Math.max(prevState.heat + (prevState.power * powerToHeat) - reactorCooling, minTemperature),
+                heat: Math.max(input.heat + (input.power * powerToHeat) - reactorCooling, minTemperature),
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
@@ -176,7 +212,7 @@ export default function () {
     };
     const distributor = {
         id: 'distributor',
-        output: ['power'],
+        output: ['power', 'heat'],
         initialState() {
             const minTemperature = production(distributor, 'minTemperature', 30);
 
@@ -188,15 +224,30 @@ export default function () {
             };
         },
         input(prevState) {
-            const input = {
-                'reactor': {
+            const input = [
+                {
+                    stateMachine: reactor.id,
                     property: 'power',
+                    max: Infinity,
+                    priority: 100,
                 },
-            };
+                {
+                    stateMachine: distributor.id,
+                    property: 'power',
+                    as: 'unusedPower',
+                    priority: -100,
+                },
+                {
+                    stateMachine: distributor.id,
+                    property: 'heat',
+                    priority: 100,
+                },
+            ];
 
             // Stop consuming power if we're overheated
             if (prevState.shutdownRemaining > 0) {
-                input.reactor.max = 0;
+                // FIXME
+                input[0].max = 0;
             }
 
             return input;
@@ -204,13 +255,13 @@ export default function () {
         update(prevState, input) {
             const minTemperature = production(distributor, 'minTemperature', 30);
             const maxTemperature = production(distributor, 'maxTemperature', 200);
-            const generatedHeat = prevState.power * production(distributor, 'powerToHeatFactor', 1);
+            const generatedHeat = input.unusedPower * production(distributor, 'powerToHeatFactor', 1);
             const shutdownDuration = production(distributor, 'shutdownDuration', 60);
 
             const state = {
                 cooling: prevState.cooling,
                 power: input.power,
-                heat: Math.max((prevState.heat + generatedHeat) - prevState.cooling, minTemperature),
+                heat: Math.max((input.heat + generatedHeat) - prevState.cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
             };
 
@@ -239,16 +290,18 @@ export default function () {
             };
         },
         input(prevState) {
-            return {
-                'distributor': {
+            return [
+                {
+                    stateMachine: distributor.id,
                     property: 'power',
                     max: prevState.powerRequired,
                 },
-                'reactor': {
+                {
+                    stateMachine: reactor.id,
                     property: 'heat',
                     max: prevState.effectiveCooling,
                 },
-            };
+            ];
         },
         update(prevState, input) {
             const powerPerCooling = production(reactorCooling, 'powerPerCooling', 1);
@@ -277,12 +330,13 @@ export default function () {
             };
         },
         input(prevState) {
-            return {
-                'distributor': {
+            return [
+                {
+                    stateMachine: distributor.id,
                     property: 'power',
                     max: prevState.powerRequired,
                 },
-            };
+            ];
         },
         update(prevState, input) {
             return {
@@ -302,12 +356,13 @@ export default function () {
             };
         },
         input(prevState) {
-            return {
-                'distributor': {
+            return [
+                {
+                    stateMachine: distributor.id,
                     property: 'power',
                     max: prevState.powerRequired,
                 },
-            };
+            ];
         },
         update(prevState, input) {
             return {
