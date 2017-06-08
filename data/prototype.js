@@ -342,7 +342,7 @@ export default function (): Program {
             return {
                 powerRequired: prevState.powerRequired,
                 powerConsumed: input.power,
-                powerSatisfaction: prevState.powerConsumed / prevState.powerRequired,
+                powerSatisfaction: input.power / prevState.powerRequired,
             };
         },
     };
@@ -368,7 +368,7 @@ export default function (): Program {
             return {
                 powerRequired: prevState.powerRequired,
                 powerConsumed: input.power,
-                powerSatisfaction: prevState.powerConsumed / prevState.powerRequired,
+                powerSatisfaction: input.power / prevState.powerRequired,
             };
         },
     };
