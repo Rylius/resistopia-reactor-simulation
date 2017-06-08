@@ -9,9 +9,7 @@ function createInitialState(program) {
     var state = {
         tick: 0,
         time: Date.now(),
-        stateMachines: {},
-        outputs: {},
-        inputs: {}
+        stateMachines: {}
     };
 
     program.stateMachines.forEach(function (stateMachine) {
@@ -20,10 +18,6 @@ function createInitialState(program) {
         } else {
             state.stateMachines[stateMachine.id] = {};
         }
-
-        state.outputs[stateMachine.id] = {};
-
-        state.inputs[stateMachine.id] = inputRequestsFor(stateMachine, state);
     });
 
     return state;
@@ -103,9 +97,7 @@ function update(program, prevState) {
     var state = {
         tick: prevState.tick + 1,
         time: Date.now(),
-        stateMachines: {},
-        outputs: {},
-        inputs: {}
+        stateMachines: {}
     };
 
     var outputs = {};

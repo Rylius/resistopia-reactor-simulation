@@ -60,8 +60,6 @@ export default function update(program: Program, prevState: State) {
         tick: prevState.tick + 1,
         time: Date.now(),
         stateMachines: {},
-        outputs: {},
-        inputs: {},
     };
 
     const outputs: { [id: string]: StateMachineOutput } = {};

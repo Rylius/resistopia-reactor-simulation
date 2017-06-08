@@ -2,13 +2,11 @@
 
 import type {Program, StateMachine} from './program';
 
-export type State = {
+export type State = {|
     tick: number,
     time: number,
     stateMachines: { [id: string]: StateMachineState },
-    outputs: { [id: string]: StateMachineOutput },
-    inputs: { [id: string]: Array<StateMachineInputRequest> },
-}
+|}
 
 // FIXME Should be number, but Flow keeps complaining for whatever reason
 export type StateMachineState = { [property: string]: any }
@@ -29,8 +27,6 @@ export function createInitialState(program: Program): State {
         tick: 0,
         time: Date.now(),
         stateMachines: {},
-        outputs: {},
-        inputs: {},
     };
 
     program.stateMachines.forEach((stateMachine: StateMachine) => {
@@ -39,10 +35,6 @@ export function createInitialState(program: Program): State {
         } else {
             state.stateMachines[stateMachine.id] = {};
         }
-
-        state.outputs[stateMachine.id] = {};
-
-        state.inputs[stateMachine.id] = inputRequestsFor(stateMachine, state);
     });
 
     return state;
