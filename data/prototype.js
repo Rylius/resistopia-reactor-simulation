@@ -96,7 +96,7 @@ export default function (): Program {
     };
     const reactor = {
         id: 'reactor',
-        output: ['power', 'heat'],
+        output: ['energy', 'heat'],
         initialState() {
             const minTemperature = production(reactor, 'minTemperature', 25);
 
@@ -104,7 +104,7 @@ export default function (): Program {
                 storedMatter: 0,
                 storedAntimatter: 0,
                 shutdownRemaining: 0,
-                power: 0,
+                energy: 0,
                 heat: minTemperature,
             };
         },
@@ -132,7 +132,7 @@ export default function (): Program {
                 },
                 {
                     stateMachine: 'reactor',
-                    property: 'power',
+                    property: 'energy',
                     priority: -100,
                 },
                 {
@@ -145,10 +145,10 @@ export default function (): Program {
         update(prevState, input) {
             const requiredMatter = production(reactor, 'maxMatterInput', 500);
             const requiredAntimatter = production(reactor, 'maxAntimatterInput', 500);
-            const powerGeneration = production(reactor, 'maxPowerGeneration', 100);
+            const energyGeneration = production(reactor, 'maxEnergyGeneration', 100);
             const heatGeneration = production(reactor, 'maxHeatGeneration', 100);
 
-            const powerToHeat = production(reactor, 'powerToHeatFactor', 1);
+            const energyToHeat = production(reactor, 'energyToHeatFactor', 1);
 
             const minTemperature = production(reactor, 'minTemperature', 25);
             const minOperatingTemperature = production(reactor, 'minOperatingTemperature', 100);
@@ -156,7 +156,7 @@ export default function (): Program {
             const maxOptimalTemperature = production(reactor, 'maxOptimalTemperature', 2000);
             const maxOperatingTemperature = production(reactor, 'maxOperatingTemperature', 5000);
 
-            const shutdownDuration = production(reactor, 'shutdownDuration', 600);
+            const shutdownDuration = production(reactor, 'shutdownDuration', 60);
 
             const reactorCooling = cooling(reactor, 100);
 
@@ -164,8 +164,8 @@ export default function (): Program {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
-                power: 0,
-                heat: Math.max(input.heat + (input.power * powerToHeat) - reactorCooling, minTemperature),
+                energy: 0,
+                heat: Math.max(input.heat + (input.energy * energyToHeat) - reactorCooling, minTemperature),
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
@@ -203,11 +203,152 @@ export default function (): Program {
                 state.storedMatter -= consumedMatter;
                 state.storedAntimatter -= consumedAntimatter;
 
-                state.power += powerGeneration * productivity * heatEfficiency;
+                state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
             }
 
             return state;
+        },
+    };
+    const energyDistributor = {
+        id: 'energy-distributor',
+        public: {
+            converterWeight: {
+                min: 0,
+                max: 1,
+            },
+            capacitorWeight: {
+                min: 0,
+                max: 1,
+            },
+            coreWeight: {
+                min: 0,
+                max: 1,
+            },
+        },
+        output: ['converterEnergy', 'capacitorEnergy', 'coreEnergy'],
+        initialState() {
+            return {
+                unusedEnergy: 0,
+                converterEnergy: 0,
+                capacitorEnergy: 0,
+                coreEnergy: 0,
+                converterWeight: 1,
+                capacitorWeight: 1,
+                coreWeight: 1,
+            };
+        },
+        input(prevState) {
+            const maxInput = (production(energyDistributor, 'outputBuffer') * 3) - prevState.unusedEnergy;
+            return [
+                {
+                    stateMachine: reactor.id,
+                    property: 'energy',
+                    max: maxInput,
+                },
+                {
+                    stateMachine: energyDistributor.id,
+                    property: 'converterEnergy',
+                    priority: -100,
+                },
+                {
+                    stateMachine: energyDistributor.id,
+                    property: 'capacitorEnergy',
+                    priority: -100,
+                },
+                {
+                    stateMachine: energyDistributor.id,
+                    property: 'coreEnergy',
+                    priority: -100,
+                },
+            ];
+        },
+        update(prevState, input) {
+            const outputBuffer = production(energyDistributor, 'outputBuffer');
+
+            let converterBuffer = input.converterEnergy;
+            let capacitorBuffer = input.capacitorEnergy;
+            let coreBuffer = input.coreEnergy;
+
+            let energy = prevState.unusedEnergy + input.energy;
+
+            let iterations = 0;
+            while (energy > 0 && iterations < 10) {
+                iterations++;
+
+                const converterBufferFull = converterBuffer >= outputBuffer;
+                const capacitorBufferFull = capacitorBuffer >= outputBuffer;
+                const coreBufferFull = coreBuffer >= outputBuffer;
+                if (converterBufferFull && capacitorBufferFull && coreBufferFull) {
+                    break;
+                }
+
+                const weightTotal = (converterBufferFull ? 0 : prevState.converterWeight) + (capacitorBufferFull ? 0 : prevState.capacitorWeight ) + (coreBufferFull ? 0 : prevState.coreWeight);
+                if (weightTotal <= 0) {
+                    break;
+                }
+
+                if (!coreBufferFull && prevState.coreWeight > 0) {
+                    const addedEnergy = Math.min(outputBuffer - coreBuffer, Math.max(energy * (prevState.coreWeight / weightTotal), 1), energy);
+                    coreBuffer += addedEnergy;
+                    energy -= addedEnergy;
+                }
+                if (!converterBufferFull && prevState.converterWeight > 0) {
+                    const addedEnergy = Math.min(outputBuffer - converterBuffer, Math.max(energy * (prevState.converterWeight / weightTotal), 1), energy);
+                    converterBuffer += addedEnergy;
+                    energy -= addedEnergy;
+                }
+                if (!capacitorBufferFull && prevState.capacitorWeight > 0) {
+                    const addedEnergy = Math.min(outputBuffer - capacitorBuffer, Math.max(energy * (prevState.capacitorWeight / weightTotal), 1), energy);
+                    capacitorBuffer += addedEnergy;
+                    energy -= addedEnergy;
+                }
+            }
+
+            return {
+                unusedEnergy: energy,
+                converterEnergy: converterBuffer,
+                capacitorEnergy: capacitorBuffer,
+                coreEnergy: coreBuffer,
+                converterWeight: prevState.converterWeight,
+                capacitorWeight: prevState.capacitorWeight,
+                coreWeight: prevState.coreWeight,
+            };
+        },
+    };
+    const energyConverter = {
+        id: 'energy-converter',
+        public: {
+            energyConversion: {
+                min: 0,
+                max: production({id: 'energy-converter'}, 'maxConversion'),
+            },
+        },
+        output: ['power', 'energy'],
+        initialState() {
+            return {
+                energy: 0,
+                energyConversion: 0,
+                power: 0,
+            }
+        },
+        input(prevState) {
+            return [
+                {
+                    stateMachine: energyDistributor.id,
+                    property: 'converterEnergy',
+                    as: 'energy',
+                    max: prevState.energyConversion,
+                },
+            ];
+        },
+        update(prevState, input) {
+            const energyToPower = production(energyConverter, 'energyToPowerFactor', 1);
+            return {
+                energy: input.energy,
+                energyConversion: prevState.energyConversion,
+                power: input.energy * energyToPower,
+            };
         },
     };
     const distributor = {
@@ -226,7 +367,7 @@ export default function (): Program {
         input(prevState) {
             const input = [
                 {
-                    stateMachine: reactor.id,
+                    stateMachine: energyConverter.id,
                     property: 'power',
                     max: Infinity,
                     priority: 100,
@@ -324,25 +465,26 @@ export default function (): Program {
         id: 'core',
         initialState() {
             return {
-                powerRequired: limit(core, 'powerRequired', 100),
-                powerConsumed: 0,
-                powerSatisfaction: 0,
+                energyRequired: limit(core, 'energyRequired', 100),
+                energyConsumed: 0,
+                energySatisfaction: 0,
             };
         },
         input(prevState) {
             return [
                 {
-                    stateMachine: distributor.id,
-                    property: 'power',
-                    max: prevState.powerRequired,
+                    stateMachine: energyDistributor.id,
+                    property: 'coreEnergy',
+                    as: 'energy',
+                    max: prevState.energyRequired,
                 },
             ];
         },
         update(prevState, input) {
             return {
-                powerRequired: prevState.powerRequired,
-                powerConsumed: input.power,
-                powerSatisfaction: input.power / prevState.powerRequired,
+                energyRequired: prevState.energyRequired,
+                energyConsumed: input.energy,
+                energySatisfaction: input.energy / prevState.energyRequired,
             };
         },
     };
@@ -376,7 +518,8 @@ export default function (): Program {
     return {
         stateMachines: [
             storageMatter, storageAntimatter,
-            reactor,
+            reactor, energyDistributor,
+            energyConverter,
             distributor, reactorCooling, core, base,
         ],
     };

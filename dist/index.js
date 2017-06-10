@@ -164,8 +164,8 @@ function clamp(value, min, max) {
 
 var initial$1 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 } };
 var cooling$1 = { "reactor": 50, "distributor": 50 };
-var production$1 = { "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxPowerGeneration": 300, "maxHeatGeneration": 200, "powerToHeatFactor": 2, "shutdownDuration": 10 }, "distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "shutdownDuration": 10 }, "reactor-cooling": { "powerPerCooling": 0.25 } };
-var limits = { "core": { "powerRequired": 50 }, "base": { "powerRequired": 75 } };
+var production$1 = { "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 2, "shutdownDuration": 10 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "shutdownDuration": 10 }, "reactor-cooling": { "powerPerCooling": 0.25 } };
+var limits = { "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 } };
 var data = {
 	initial: initial$1,
 	cooling: cooling$1,
@@ -259,7 +259,7 @@ var prototype = function () {
     };
     var reactor = {
         id: 'reactor',
-        output: ['power', 'heat'],
+        output: ['energy', 'heat'],
         initialState: function initialState() {
             var minTemperature = production$$1(reactor, 'minTemperature', 25);
 
@@ -267,7 +267,7 @@ var prototype = function () {
                 storedMatter: 0,
                 storedAntimatter: 0,
                 shutdownRemaining: 0,
-                power: 0,
+                energy: 0,
                 heat: minTemperature
             };
         },
@@ -292,7 +292,7 @@ var prototype = function () {
                 max: running ? maxAntimatter : 0
             }, {
                 stateMachine: 'reactor',
-                property: 'power',
+                property: 'energy',
                 priority: -100
             }, {
                 stateMachine: 'reactor',
@@ -303,10 +303,10 @@ var prototype = function () {
         update: function update(prevState, input) {
             var requiredMatter = production$$1(reactor, 'maxMatterInput', 500);
             var requiredAntimatter = production$$1(reactor, 'maxAntimatterInput', 500);
-            var powerGeneration = production$$1(reactor, 'maxPowerGeneration', 100);
+            var energyGeneration = production$$1(reactor, 'maxEnergyGeneration', 100);
             var heatGeneration = production$$1(reactor, 'maxHeatGeneration', 100);
 
-            var powerToHeat = production$$1(reactor, 'powerToHeatFactor', 1);
+            var energyToHeat = production$$1(reactor, 'energyToHeatFactor', 1);
 
             var minTemperature = production$$1(reactor, 'minTemperature', 25);
             var minOperatingTemperature = production$$1(reactor, 'minOperatingTemperature', 100);
@@ -314,7 +314,7 @@ var prototype = function () {
             var maxOptimalTemperature = production$$1(reactor, 'maxOptimalTemperature', 2000);
             var maxOperatingTemperature = production$$1(reactor, 'maxOperatingTemperature', 5000);
 
-            var shutdownDuration = production$$1(reactor, 'shutdownDuration', 600);
+            var shutdownDuration = production$$1(reactor, 'shutdownDuration', 60);
 
             var reactorCooling = cooling$$1(reactor, 100);
 
@@ -322,8 +322,8 @@ var prototype = function () {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
-                power: 0,
-                heat: Math.max(input.heat + input.power * powerToHeat - reactorCooling, minTemperature)
+                energy: 0,
+                heat: Math.max(input.heat + input.energy * energyToHeat - reactorCooling, minTemperature)
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
@@ -354,11 +354,145 @@ var prototype = function () {
                 state.storedMatter -= consumedMatter;
                 state.storedAntimatter -= consumedAntimatter;
 
-                state.power += powerGeneration * productivity * heatEfficiency;
+                state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
             }
 
             return state;
+        }
+    };
+    var energyDistributor = {
+        id: 'energy-distributor',
+        public: {
+            converterWeight: {
+                min: 0,
+                max: 1
+            },
+            capacitorWeight: {
+                min: 0,
+                max: 1
+            },
+            coreWeight: {
+                min: 0,
+                max: 1
+            }
+        },
+        output: ['converterEnergy', 'capacitorEnergy', 'coreEnergy'],
+        initialState: function initialState() {
+            return {
+                unusedEnergy: 0,
+                converterEnergy: 0,
+                capacitorEnergy: 0,
+                coreEnergy: 0,
+                converterWeight: 1,
+                capacitorWeight: 1,
+                coreWeight: 1
+            };
+        },
+        input: function input(prevState) {
+            var maxInput = production$$1(energyDistributor, 'outputBuffer') * 3 - prevState.unusedEnergy;
+            return [{
+                stateMachine: reactor.id,
+                property: 'energy',
+                max: maxInput
+            }, {
+                stateMachine: energyDistributor.id,
+                property: 'converterEnergy',
+                priority: -100
+            }, {
+                stateMachine: energyDistributor.id,
+                property: 'capacitorEnergy',
+                priority: -100
+            }, {
+                stateMachine: energyDistributor.id,
+                property: 'coreEnergy',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var outputBuffer = production$$1(energyDistributor, 'outputBuffer');
+
+            var converterBuffer = input.converterEnergy;
+            var capacitorBuffer = input.capacitorEnergy;
+            var coreBuffer = input.coreEnergy;
+
+            var energy = prevState.unusedEnergy + input.energy;
+
+            var iterations = 0;
+            while (energy > 0 && iterations < 10) {
+                iterations++;
+
+                var converterBufferFull = converterBuffer >= outputBuffer;
+                var capacitorBufferFull = capacitorBuffer >= outputBuffer;
+                var coreBufferFull = coreBuffer >= outputBuffer;
+                if (converterBufferFull && capacitorBufferFull && coreBufferFull) {
+                    break;
+                }
+
+                var weightTotal = (converterBufferFull ? 0 : prevState.converterWeight) + (capacitorBufferFull ? 0 : prevState.capacitorWeight) + (coreBufferFull ? 0 : prevState.coreWeight);
+                if (weightTotal <= 0) {
+                    break;
+                }
+
+                if (!coreBufferFull && prevState.coreWeight > 0) {
+                    var addedEnergy = Math.min(outputBuffer - coreBuffer, Math.max(energy * (prevState.coreWeight / weightTotal), 1), energy);
+                    coreBuffer += addedEnergy;
+                    energy -= addedEnergy;
+                }
+                if (!converterBufferFull && prevState.converterWeight > 0) {
+                    var _addedEnergy = Math.min(outputBuffer - converterBuffer, Math.max(energy * (prevState.converterWeight / weightTotal), 1), energy);
+                    converterBuffer += _addedEnergy;
+                    energy -= _addedEnergy;
+                }
+                if (!capacitorBufferFull && prevState.capacitorWeight > 0) {
+                    var _addedEnergy2 = Math.min(outputBuffer - capacitorBuffer, Math.max(energy * (prevState.capacitorWeight / weightTotal), 1), energy);
+                    capacitorBuffer += _addedEnergy2;
+                    energy -= _addedEnergy2;
+                }
+            }
+
+            return {
+                unusedEnergy: energy,
+                converterEnergy: converterBuffer,
+                capacitorEnergy: capacitorBuffer,
+                coreEnergy: coreBuffer,
+                converterWeight: prevState.converterWeight,
+                capacitorWeight: prevState.capacitorWeight,
+                coreWeight: prevState.coreWeight
+            };
+        }
+    };
+    var energyConverter = {
+        id: 'energy-converter',
+        public: {
+            energyConversion: {
+                min: 0,
+                max: production$$1({ id: 'energy-converter' }, 'maxConversion')
+            }
+        },
+        output: ['power', 'energy'],
+        initialState: function initialState() {
+            return {
+                energy: 0,
+                energyConversion: 0,
+                power: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: energyDistributor.id,
+                property: 'converterEnergy',
+                as: 'energy',
+                max: prevState.energyConversion
+            }];
+        },
+        update: function update(prevState, input) {
+            var energyToPower = production$$1(energyConverter, 'energyToPowerFactor', 1);
+            return {
+                energy: input.energy,
+                energyConversion: prevState.energyConversion,
+                power: input.energy * energyToPower
+            };
         }
     };
     var distributor = {
@@ -376,7 +510,7 @@ var prototype = function () {
         },
         input: function input(prevState) {
             var input = [{
-                stateMachine: reactor.id,
+                stateMachine: energyConverter.id,
                 property: 'power',
                 max: Infinity,
                 priority: 100
@@ -468,23 +602,24 @@ var prototype = function () {
         id: 'core',
         initialState: function initialState() {
             return {
-                powerRequired: limit(core, 'powerRequired', 100),
-                powerConsumed: 0,
-                powerSatisfaction: 0
+                energyRequired: limit(core, 'energyRequired', 100),
+                energyConsumed: 0,
+                energySatisfaction: 0
             };
         },
         input: function input(prevState) {
             return [{
-                stateMachine: distributor.id,
-                property: 'power',
-                max: prevState.powerRequired
+                stateMachine: energyDistributor.id,
+                property: 'coreEnergy',
+                as: 'energy',
+                max: prevState.energyRequired
             }];
         },
         update: function update(prevState, input) {
             return {
-                powerRequired: prevState.powerRequired,
-                powerConsumed: input.power,
-                powerSatisfaction: input.power / prevState.powerRequired
+                energyRequired: prevState.energyRequired,
+                energyConsumed: input.energy,
+                energySatisfaction: input.energy / prevState.energyRequired
             };
         }
     };
@@ -514,7 +649,7 @@ var prototype = function () {
     };
 
     return {
-        stateMachines: [storageMatter, storageAntimatter, reactor, distributor, reactorCooling, core, base]
+        stateMachines: [storageMatter, storageAntimatter, reactor, energyDistributor, energyConverter, distributor, reactorCooling, core, base]
     };
 };
 

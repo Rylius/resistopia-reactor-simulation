@@ -20,10 +20,17 @@
             "minOptimalTemperature": 1000,
             "maxOptimalTemperature": 2000,
             "maxOperatingTemperature": 5000,
-            "maxPowerGeneration": 300,
+            "maxEnergyGeneration": 300,
             "maxHeatGeneration": 200,
-            "powerToHeatFactor": 2,
+            "energyToHeatFactor": 2,
             "shutdownDuration": 10
+        },
+        "energy-distributor": {
+            "outputBuffer": 200
+        },
+        "energy-converter": {
+            "maxConversion": 100,
+            "energyToPowerFactor": 1
         },
         "distributor": {
             "minTemperature": 30,
@@ -37,7 +44,7 @@
     },
     "limits": {
         "core": {
-            "powerRequired": 50
+            "energyRequired": 150
         },
         "base": {
             "powerRequired": 75
