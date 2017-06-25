@@ -165,7 +165,7 @@ function clamp(value, min, max) {
 var initial$1 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 } };
 var cooling$1 = { "reactor": 50, "distributor": 50 };
 var production$1 = { "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 2, "shutdownDuration": 10 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "shutdownDuration": 10 }, "reactor-cooling": { "powerPerCooling": 0.25 } };
-var limits = { "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 } };
+var limits = { "energy-capacitor": { "capacity": 270000 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 } };
 var data = {
 	initial: initial$1,
 	cooling: cooling$1,
@@ -495,6 +495,35 @@ var prototype = function () {
             };
         }
     };
+    var energyCapacitor = {
+        id: 'energy-capacitor',
+        output: ['energy'],
+        initialState: function initialState() {
+            return {
+                capacity: limit(energyCapacitor, 'capacity'),
+                energy: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: energyDistributor.id,
+                property: 'capacitorEnergy',
+                as: 'energy',
+                max: prevState.capacity - prevState.energy
+            }, {
+                stateMachine: energyCapacitor.id,
+                property: 'energy',
+                as: 'storedEnergy',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                capacity: prevState.capacity,
+                energy: input.storedEnergy + input.energy
+            };
+        }
+    };
     var distributor = {
         id: 'distributor',
         output: ['power', 'heat'],
@@ -604,6 +633,9 @@ var prototype = function () {
             return {
                 energyRequired: limit(core, 'energyRequired', 100),
                 energyConsumed: 0,
+                energyFromDistributor: 0,
+                energyFromCapacitor: 0,
+                energyMissing: 0,
                 energySatisfaction: 0
             };
         },
@@ -613,13 +645,23 @@ var prototype = function () {
                 property: 'coreEnergy',
                 as: 'energy',
                 max: prevState.energyRequired
+            }, {
+                stateMachine: energyCapacitor.id,
+                property: 'energy',
+                as: 'capacitorEnergy',
+                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
             }];
         },
         update: function update(prevState, input) {
+            // It's possible we drew too much energy in one tick, so discard any excess
+            var energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
             return {
                 energyRequired: prevState.energyRequired,
-                energyConsumed: input.energy,
-                energySatisfaction: input.energy / prevState.energyRequired
+                energyConsumed: energy,
+                energyFromDistributor: input.energy,
+                energyFromCapacitor: input.capacitorEnergy,
+                energyMissing: Math.max(prevState.energyRequired - energy, 0),
+                energySatisfaction: energy / prevState.energyRequired
             };
         }
     };
@@ -649,7 +691,7 @@ var prototype = function () {
     };
 
     return {
-        stateMachines: [storageMatter, storageAntimatter, reactor, energyDistributor, energyConverter, distributor, reactorCooling, core, base]
+        stateMachines: [storageMatter, storageAntimatter, reactor, energyDistributor, energyCapacitor, energyConverter, distributor, reactorCooling, core, base]
     };
 };
 

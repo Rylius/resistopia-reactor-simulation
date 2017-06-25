@@ -351,6 +351,38 @@ export default function (): Program {
             };
         },
     };
+    const energyCapacitor = {
+        id: 'energy-capacitor',
+        output: ['energy'],
+        initialState() {
+            return {
+                capacity: limit(energyCapacitor, 'capacity'),
+                energy: 0,
+            }
+        },
+        input(prevState) {
+            return [
+                {
+                    stateMachine: energyDistributor.id,
+                    property: 'capacitorEnergy',
+                    as: 'energy',
+                    max: prevState.capacity - prevState.energy,
+                },
+                {
+                    stateMachine: energyCapacitor.id,
+                    property: 'energy',
+                    as: 'storedEnergy',
+                    priority: -100,
+                },
+            ];
+        },
+        update(prevState, input) {
+            return {
+                capacity: prevState.capacity,
+                energy: input.storedEnergy + input.energy,
+            };
+        },
+    };
     const distributor = {
         id: 'distributor',
         output: ['power', 'heat'],
@@ -467,6 +499,9 @@ export default function (): Program {
             return {
                 energyRequired: limit(core, 'energyRequired', 100),
                 energyConsumed: 0,
+                energyFromDistributor: 0,
+                energyFromCapacitor: 0,
+                energyMissing: 0,
                 energySatisfaction: 0,
             };
         },
@@ -478,13 +513,24 @@ export default function (): Program {
                     as: 'energy',
                     max: prevState.energyRequired,
                 },
+                {
+                    stateMachine: energyCapacitor.id,
+                    property: 'energy',
+                    as: 'capacitorEnergy',
+                    max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0),
+                },
             ];
         },
         update(prevState, input) {
+            // It's possible we drew too much energy in one tick, so discard any excess
+            const energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
             return {
                 energyRequired: prevState.energyRequired,
-                energyConsumed: input.energy,
-                energySatisfaction: input.energy / prevState.energyRequired,
+                energyConsumed: energy,
+                energyFromDistributor: input.energy,
+                energyFromCapacitor: input.capacitorEnergy,
+                energyMissing: Math.max(prevState.energyRequired - energy, 0),
+                energySatisfaction: energy / prevState.energyRequired,
             };
         },
     };
@@ -518,8 +564,7 @@ export default function (): Program {
     return {
         stateMachines: [
             storageMatter, storageAntimatter,
-            reactor, energyDistributor,
-            energyConverter,
+            reactor, energyDistributor, energyCapacitor, energyConverter,
             distributor, reactorCooling, core, base,
         ],
     };

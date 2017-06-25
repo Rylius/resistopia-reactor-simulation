@@ -43,6 +43,9 @@
         }
     },
     "limits": {
+        "energy-capacitor": {
+            "capacity": 270000
+        },
         "core": {
             "energyRequired": 150
         },
