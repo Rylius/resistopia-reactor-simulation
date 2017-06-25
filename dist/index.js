@@ -181,11 +181,15 @@ function cooling$$1(stateMachine, defaultValue) {
     return data.cooling[stateMachine.id] || defaultValue;
 }
 
-function production$$1(stateMachine, property, defaultValue) {
+function production$$1(stateMachine, property) {
+    var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
     return (data.production[stateMachine.id] || {})[property] || defaultValue;
 }
 
-function limit(stateMachine, property, defaultValue) {
+function limit(stateMachine, property) {
+    var defaultValue = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
     return (data.limits[stateMachine.id] || {})[property] || defaultValue;
 }
 

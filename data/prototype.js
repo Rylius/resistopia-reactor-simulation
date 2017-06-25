@@ -14,11 +14,11 @@ function cooling(stateMachine, defaultValue): number {
     return data.cooling[stateMachine.id] || defaultValue;
 }
 
-function production(stateMachine, property, defaultValue): number {
+function production(stateMachine, property, defaultValue = 0): number {
     return (data.production[stateMachine.id] || {})[property] || defaultValue;
 }
 
-function limit(stateMachine, property, defaultValue): number {
+function limit(stateMachine, property, defaultValue = 0): number {
     return (data.limits[stateMachine.id] || {})[property] || defaultValue;
 }
 
