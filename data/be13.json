@@ -1,0 +1,65 @@
+{
+    "initial": {
+        "storage-matter": {
+            "matter": 100000000
+        },
+        "storage-antimatter": {
+            "antimatter": 100000000
+        },
+        "reactor": {},
+        "energy-distributor": {
+            "converterWeight": 1,
+            "capacitorWeight": 0.5,
+            "coreWeight": 1
+        }
+    },
+    "config": {
+        "storage-matter": {
+            "maxReleasedMatter": 500
+        },
+        "storage-antimatter": {
+            "maxReleasedAntimatter": 500
+        },
+        "reactor": {
+            "maxMatterInput": 500,
+            "maxAntimatterInput": 500,
+            "minTemperature": 25,
+            "minOperatingTemperature": 100,
+            "minOptimalTemperature": 1000,
+            "maxOptimalTemperature": 2000,
+            "maxOperatingTemperature": 5000,
+            "maxEnergyGeneration": 300,
+            "maxHeatGeneration": 200,
+            "energyToHeatFactor": 1.1,
+            "shutdownDuration": 10,
+            "cooling": 50
+        },
+        "energy-distributor": {
+            "outputBuffer": 200
+        },
+        "energy-converter": {
+            "maxConversion": 100,
+            "energyToPowerFactor": 1
+        },
+        "energy-capacitor": {
+            "capacity": 270000
+        },
+        "power-distributor": {
+            "minTemperature": 30,
+            "maxTemperature": 200,
+            "powerToHeatFactor": 2,
+            "cooling": 50,
+            "shutdownDuration": 10
+        },
+        "reactor-cooling": {
+            "maxCooling": 200,
+            "powerPerCooling": 0.25
+        },
+        "core": {
+            "energyRequired": 150
+        },
+        "base": {
+            "powerRequired": 75
+        }
+    }
+}

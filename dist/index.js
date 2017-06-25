@@ -699,11 +699,627 @@ var prototype = function () {
     };
 };
 
+function value(config, type, stateMachineId, propertyName) {
+    if (!config) {
+        throw new Error('Invalid config file');
+    }
+    if (!config[type]) {
+        throw new Error('No section of type \'' + type + '\' in config');
+    }
+    if (!config[type][stateMachineId]) {
+        throw new Error('No ' + type + ' entry for state machine ' + stateMachineId);
+    }
+    if (typeof config[type][stateMachineId][propertyName] === 'undefined') {
+        throw new Error('Property ' + propertyName + ' is not defined for state machine ' + stateMachineId + ' in type ' + type);
+    }
+
+    return config[type][stateMachineId][propertyName];
+}
+
+function initialValue(config, stateMachineId, propertyName) {
+    return value(config, 'initial', stateMachineId, propertyName);
+}
+
+function configValue(config, stateMachineId, propertyName) {
+    return value(config, 'config', stateMachineId, propertyName);
+}
+
+var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxCooling": 200, "powerPerCooling": 0.25 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 } };
+var be13 = {
+	initial: initial$2,
+	config: config$1
+};
+
+var STORAGE_MATTER_ID = 'storage-matter';
+
+function createStorageMatter(config) {
+    var maxReleasedMatter = config.value(STORAGE_MATTER_ID, 'maxReleasedMatter');
+
+    return {
+        id: STORAGE_MATTER_ID,
+        public: {
+            releasedMatterPerTick: {
+                min: 0,
+                max: maxReleasedMatter
+            }
+        },
+        output: ['releasedMatter'],
+        initialState: function initialState() {
+            return {
+                matter: config.initial(STORAGE_MATTER_ID, 'matter'),
+                releasedMatterPerTick: 0,
+                releasedMatter: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: STORAGE_MATTER_ID,
+                property: 'releasedMatter',
+                as: 'unusedMatter',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
+            return {
+                matter: prevState.matter - releasedMatter + input.unusedMatter,
+                releasedMatterPerTick: prevState.releasedMatterPerTick,
+                releasedMatter: releasedMatter
+            };
+        }
+    };
+}
+
+var STORAGE_ANTIMATTER_ID = 'storage-antimatter';
+
+function createStorageAntimatter(config) {
+    var maxReleasedAntimatter = config.value(STORAGE_ANTIMATTER_ID, 'maxReleasedAntimatter');
+
+    return {
+        id: STORAGE_ANTIMATTER_ID,
+        public: {
+            releasedAntimatterPerTick: {
+                min: 0,
+                max: maxReleasedAntimatter
+            }
+        },
+        output: ['releasedAntimatter'],
+        initialState: function initialState() {
+            return {
+                antimatter: config.initial(STORAGE_ANTIMATTER_ID, 'antimatter'),
+                releasedAntimatterPerTick: 0,
+                releasedAntimatter: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: STORAGE_ANTIMATTER_ID,
+                property: 'releasedAntimatter',
+                as: 'unusedAntimatter',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
+            return {
+                antimatter: prevState.antimatter - releasedAntimatter + input.unusedAntimatter,
+                releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
+                releasedAntimatter: releasedAntimatter
+            };
+        }
+    };
+}
+
+var REACTOR_ID = 'reactor';
+
+function createReactor(config) {
+    var minTemperature = config.value(REACTOR_ID, 'minTemperature');
+    var minOperatingTemperature = config.value(REACTOR_ID, 'minOperatingTemperature');
+    var minOptimalTemperature = config.value(REACTOR_ID, 'minOptimalTemperature');
+    var maxOptimalTemperature = config.value(REACTOR_ID, 'maxOptimalTemperature');
+    var maxOperatingTemperature = config.value(REACTOR_ID, 'maxOperatingTemperature');
+
+    var maxMatterInput = config.value(REACTOR_ID, 'maxMatterInput');
+    var maxAntimatterInput = config.value(REACTOR_ID, 'maxAntimatterInput');
+
+    var energyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
+    var heatGeneration = config.value(REACTOR_ID, 'maxHeatGeneration');
+
+    var energyToHeat = config.value(REACTOR_ID, 'energyToHeatFactor');
+
+    var shutdownDuration = config.value(REACTOR_ID, 'shutdownDuration');
+
+    var reactorCooling = config.value(REACTOR_ID, 'cooling');
+
+    return {
+        id: REACTOR_ID,
+        output: ['energy', 'heat'],
+        initialState: function initialState() {
+            return {
+                storedMatter: 0,
+                storedAntimatter: 0,
+                shutdownRemaining: 0,
+                energy: 0,
+                heat: minTemperature
+            };
+        },
+        input: function input(prevState) {
+            var running = prevState.shutdownRemaining <= 0;
+
+            var maxMatter = Math.min(Math.max(maxMatterInput - prevState.storedMatter, 0), maxMatterInput);
+            var maxAntimatter = Math.min(Math.max(maxAntimatterInput - prevState.storedAntimatter, 0), maxAntimatterInput);
+
+            return [{
+                stateMachine: STORAGE_MATTER_ID,
+                property: 'releasedMatter',
+                as: 'matter',
+                max: running ? maxMatter : 0
+            }, {
+                stateMachine: STORAGE_ANTIMATTER_ID,
+                property: 'releasedAntimatter',
+                as: 'antimatter',
+                max: running ? maxAntimatter : 0
+            }, {
+                stateMachine: REACTOR_ID,
+                property: 'energy',
+                priority: -100
+            }, {
+                stateMachine: REACTOR_ID,
+                property: 'heat',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var state = {
+                storedMatter: prevState.storedMatter + input.matter,
+                storedAntimatter: prevState.storedAntimatter + input.antimatter,
+                shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
+                energy: 0,
+                heat: Math.max(input.heat + input.energy * energyToHeat - reactorCooling, minTemperature)
+            };
+
+            // Force full shutdown duration as long as reactor heat is above the threshold
+            if (state.heat > maxOperatingTemperature) {
+                state.shutdownRemaining = shutdownDuration;
+            }
+
+            var running = state.shutdownRemaining <= 0;
+            if (running) {
+                var requiredMatter = maxMatterInput;
+                var requiredAntimatter = maxAntimatterInput;
+
+                var availableMatter = Math.min(state.storedMatter, requiredMatter);
+                var availableAntimatter = Math.min(state.storedAntimatter, requiredAntimatter);
+
+                var productivity = Math.max(Math.min(availableMatter / requiredMatter, availableAntimatter / requiredAntimatter, 1), 0);
+
+                var heatEfficiency = 0;
+                if (state.heat < minOptimalTemperature) {
+                    heatEfficiency = normalizeRange(state.heat, minOperatingTemperature, minOptimalTemperature);
+                } else if (state.heat > maxOptimalTemperature) {
+                    heatEfficiency = 1 - normalizeRange(state.heat, maxOptimalTemperature, maxOperatingTemperature);
+                } else {
+                    heatEfficiency = 1;
+                }
+                heatEfficiency = clamp(heatEfficiency, 0, 1);
+
+                var consumedMatter = requiredMatter * productivity;
+                var consumedAntimatter = requiredAntimatter * productivity;
+
+                state.storedMatter -= consumedMatter;
+                state.storedAntimatter -= consumedAntimatter;
+
+                state.energy += energyGeneration * productivity * heatEfficiency;
+                state.heat += heatGeneration * productivity;
+            }
+
+            return state;
+        }
+    };
+}
+
+var ENERGY_DISTRIBUTOR_ID = 'energy-distributor';
+
+function createEnergyDistributor(config) {
+    var outputBuffer = config.value(ENERGY_DISTRIBUTOR_ID, 'outputBuffer');
+
+    var initialConverterWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'converterWeight');
+    var initialCapacitorWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'capacitorWeight');
+    var initialCoreWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'coreWeight');
+
+    return {
+        id: ENERGY_DISTRIBUTOR_ID,
+        public: {
+            converterWeight: {
+                min: 0,
+                max: 1
+            },
+            capacitorWeight: {
+                min: 0,
+                max: 1
+            },
+            coreWeight: {
+                min: 0,
+                max: 1
+            }
+        },
+        output: ['converterEnergy', 'capacitorEnergy', 'coreEnergy'],
+        initialState: function initialState() {
+            return {
+                unusedEnergy: 0,
+                converterEnergy: 0,
+                capacitorEnergy: 0,
+                coreEnergy: 0,
+                converterWeight: initialConverterWeight,
+                capacitorWeight: initialCapacitorWeight,
+                coreWeight: initialCoreWeight
+            };
+        },
+        input: function input(prevState) {
+            var maxInput = outputBuffer * 3 - prevState.unusedEnergy;
+            return [{
+                stateMachine: REACTOR_ID,
+                property: 'energy',
+                max: maxInput
+            }, {
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'converterEnergy',
+                priority: -100
+            }, {
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'capacitorEnergy',
+                priority: -100
+            }, {
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'coreEnergy',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var converterBuffer = input.converterEnergy;
+            var capacitorBuffer = input.capacitorEnergy;
+            var coreBuffer = input.coreEnergy;
+
+            var energy = prevState.unusedEnergy + input.energy;
+
+            var iterations = 0;
+            while (energy > 0 && iterations < 10) {
+                iterations++;
+
+                var converterBufferFull = converterBuffer >= outputBuffer;
+                var capacitorBufferFull = capacitorBuffer >= outputBuffer;
+                var coreBufferFull = coreBuffer >= outputBuffer;
+                if (converterBufferFull && capacitorBufferFull && coreBufferFull) {
+                    break;
+                }
+
+                var weightTotal = (converterBufferFull ? 0 : prevState.converterWeight) + (capacitorBufferFull ? 0 : prevState.capacitorWeight) + (coreBufferFull ? 0 : prevState.coreWeight);
+                if (weightTotal <= 0) {
+                    break;
+                }
+
+                if (!coreBufferFull && prevState.coreWeight > 0) {
+                    var addedEnergy = Math.min(outputBuffer - coreBuffer, Math.max(energy * (prevState.coreWeight / weightTotal), 1), energy);
+                    coreBuffer += addedEnergy;
+                    energy -= addedEnergy;
+                }
+                if (!converterBufferFull && prevState.converterWeight > 0) {
+                    var _addedEnergy = Math.min(outputBuffer - converterBuffer, Math.max(energy * (prevState.converterWeight / weightTotal), 1), energy);
+                    converterBuffer += _addedEnergy;
+                    energy -= _addedEnergy;
+                }
+                if (!capacitorBufferFull && prevState.capacitorWeight > 0) {
+                    var _addedEnergy2 = Math.min(outputBuffer - capacitorBuffer, Math.max(energy * (prevState.capacitorWeight / weightTotal), 1), energy);
+                    capacitorBuffer += _addedEnergy2;
+                    energy -= _addedEnergy2;
+                }
+            }
+
+            return {
+                unusedEnergy: energy,
+                converterEnergy: converterBuffer,
+                capacitorEnergy: capacitorBuffer,
+                coreEnergy: coreBuffer,
+                converterWeight: prevState.converterWeight,
+                capacitorWeight: prevState.capacitorWeight,
+                coreWeight: prevState.coreWeight
+            };
+        }
+    };
+}
+
+var ENERGY_CONVERTER_ID = 'energy-converter';
+
+function createEnergyConverter(config) {
+    var energyToPower = config.value(ENERGY_CONVERTER_ID, 'energyToPowerFactor');
+    var maxConversion = config.value(ENERGY_CONVERTER_ID, 'maxConversion');
+
+    return {
+        id: ENERGY_CONVERTER_ID,
+        public: {
+            energyConversion: {
+                min: 0,
+                max: maxConversion
+            }
+        },
+        output: ['power', 'energy'],
+        initialState: function initialState() {
+            return {
+                energy: 0,
+                energyConversion: 0,
+                power: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'converterEnergy',
+                as: 'energy',
+                max: prevState.energyConversion
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                energy: input.energy,
+                energyConversion: prevState.energyConversion,
+                power: input.energy * energyToPower
+            };
+        }
+    };
+}
+
+var ENERGY_CAPACITOR_ID = 'energy-capacitor';
+
+function createEnergyCapacitor(config) {
+    var capacity = config.value(ENERGY_CAPACITOR_ID, 'capacity');
+
+    return {
+        id: ENERGY_CAPACITOR_ID,
+        output: ['energy'],
+        initialState: function initialState() {
+            return {
+                capacity: capacity,
+                energy: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'capacitorEnergy',
+                as: 'energy',
+                max: prevState.capacity - prevState.energy
+            }, {
+                stateMachine: ENERGY_CAPACITOR_ID,
+                property: 'energy',
+                as: 'storedEnergy',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                capacity: prevState.capacity,
+                energy: input.storedEnergy + input.energy
+            };
+        }
+    };
+}
+
+var POWER_DISTRIBUTOR_ID = 'power-distributor';
+
+function createPowerDistributor(config) {
+    var minTemperature = config.value(POWER_DISTRIBUTOR_ID, 'minTemperature');
+    var maxTemperature = config.value(POWER_DISTRIBUTOR_ID, 'maxTemperature');
+    var cooling = config.value(POWER_DISTRIBUTOR_ID, 'cooling');
+    var powerToHeatFactor = config.value(POWER_DISTRIBUTOR_ID, 'powerToHeatFactor');
+
+    var shutdownDuration = config.value(POWER_DISTRIBUTOR_ID, 'shutdownDuration');
+
+    return {
+        id: POWER_DISTRIBUTOR_ID,
+        output: ['power', 'heat'],
+        initialState: function initialState() {
+            return {
+                cooling: cooling,
+                power: 0,
+                heat: minTemperature,
+                shutdownRemaining: 0
+            };
+        },
+        input: function input(prevState) {
+            var input = [{
+                stateMachine: ENERGY_CONVERTER_ID,
+                property: 'power',
+                max: Infinity,
+                priority: 100
+            }, {
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                as: 'unusedPower',
+                priority: -100
+            }, {
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'heat',
+                priority: 100
+            }];
+
+            // Stop consuming power if we're overheated
+            if (prevState.shutdownRemaining > 0) {
+                // FIXME
+                input[0].max = 0;
+            }
+
+            return input;
+        },
+        update: function update(prevState, input) {
+            var generatedHeat = input.unusedPower * powerToHeatFactor;
+
+            var state = {
+                cooling: prevState.cooling,
+                power: input.power,
+                heat: Math.max(input.heat + generatedHeat - prevState.cooling, minTemperature),
+                shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0)
+            };
+
+            if (state.heat > maxTemperature) {
+                state.shutdownRemaining = shutdownDuration;
+            }
+
+            return state;
+        }
+    };
+}
+
+var COOLING_ID = 'reactor-cooling';
+
+function createCooling(config) {
+    var maxCooling = config.value(COOLING_ID, 'maxCooling');
+    var powerPerCooling = config.value(COOLING_ID, 'powerPerCooling');
+
+    return {
+        id: COOLING_ID,
+        public: {
+            cooling: {
+                min: 0,
+                max: maxCooling
+            }
+        },
+        initialState: function initialState() {
+            return {
+                cooling: 0,
+                effectiveCooling: 0,
+                powerRequired: 0,
+                powerConsumed: 0,
+                powerSatisfaction: 1
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: prevState.powerRequired
+            }, {
+                stateMachine: REACTOR_ID,
+                property: 'heat',
+                max: prevState.effectiveCooling
+            }];
+        },
+        update: function update(prevState, input) {
+            var powerRequired = prevState.cooling * powerPerCooling;
+
+            var active = prevState.cooling > 0;
+            var powerSatisfaction = active ? input.power / powerRequired : 1;
+            var effectiveCooling = active ? prevState.cooling * powerSatisfaction : 0;
+
+            return {
+                cooling: prevState.cooling,
+                effectiveCooling: effectiveCooling,
+                powerRequired: powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction: powerSatisfaction
+            };
+        }
+    };
+}
+
+var CORE_ID = 'core';
+
+function createCore(config) {
+    var energyRequired = config.value(CORE_ID, 'energyRequired');
+
+    return {
+        id: CORE_ID,
+        initialState: function initialState() {
+            return {
+                energyRequired: energyRequired,
+                energyConsumed: 0,
+                energyFromDistributor: 0,
+                energyFromCapacitor: 0,
+                energyMissing: 0,
+                energySatisfaction: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'coreEnergy',
+                as: 'energy',
+                max: prevState.energyRequired
+            }, {
+                stateMachine: ENERGY_CAPACITOR_ID,
+                property: 'energy',
+                as: 'capacitorEnergy',
+                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
+            }];
+        },
+        update: function update(prevState, input) {
+            // It's possible we drew too much energy in one tick, so discard any excess
+            var energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
+            return {
+                energyRequired: prevState.energyRequired,
+                energyConsumed: energy,
+                energyFromDistributor: input.energy,
+                energyFromCapacitor: input.capacitorEnergy,
+                energyMissing: Math.max(prevState.energyRequired - energy, 0),
+                energySatisfaction: energy / prevState.energyRequired
+            };
+        }
+    };
+}
+
+var BASE_ID = 'base';
+
+function createCore$1(config) {
+    var powerRequired = config.value(BASE_ID, 'powerRequired');
+
+    return {
+        id: BASE_ID,
+        initialState: function initialState() {
+            return {
+                powerRequired: powerRequired,
+                powerConsumed: 0,
+                powerSatisfaction: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: prevState.powerRequired
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                powerRequired: prevState.powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction: input.power / prevState.powerRequired
+            };
+        }
+    };
+}
+
+var config$$1 = {
+    initial: function initial$$1(stateMachine, property) {
+        return initialValue(be13, stateMachine, property);
+    },
+    value: function value(stateMachine, property) {
+        return configValue(be13, stateMachine, property);
+    }
+};
+
+
+function createProgramBe13() {
+    return {
+        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)]
+    };
+}
+
 var index = {
     createInitialState: createInitialState,
     update: update,
     Program: {
-        Prototype: prototype()
+        Prototype: prototype(),
+        BE13: createProgramBe13()
     }
 };
 
