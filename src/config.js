@@ -1,6 +1,6 @@
 // @flow
 
-export type Config = { [type: string]: { [stateMachine: string]: number } }
+export type Config = { [type: string]: { [stateMachine: string]: { [property: string]: number } } }
 
 function value(config: Config, type: string, stateMachineId: string, propertyName: string): number {
     if (!config) {

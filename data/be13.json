@@ -11,6 +11,29 @@
             "converterWeight": 1,
             "capacitorWeight": 0.5,
             "coreWeight": 1
+        },
+        "pump-a": {
+            "enabled": 1,
+            "filterHealth": 172800,
+            "filterMaxHealth": 259200
+        },
+        "pump-b": {
+            "enabled": 1,
+            "filterHealth": 259200,
+            "filterMaxHealth": 345600
+        },
+        "pump-c": {
+            "enabled": 1,
+            "filterHealth": 345600,
+            "filterMaxHealth": 345600
+        },
+        "water-tank": {
+            "water": 30000
+        },
+        "water-treatment": {
+            "resourceCleaner": 345600,
+            "resourceChlorine": 345600,
+            "resourceMinerals": 345600
         }
     },
     "config": {
@@ -60,6 +83,23 @@
         },
         "base": {
             "powerRequired": 75
+        },
+        "pump-a": {
+            "maxProduction": 3200
+        },
+        "pump-b": {
+            "maxProduction": 1900
+        },
+        "pump-c": {
+            "maxProduction": 1200
+        },
+        "water-tank": {
+            "capacity": 35000
+        },
+        "water-treatment": {
+            "maxWaterConsumption": 1500,
+            "maxPowerConsumption": 10,
+            "drinkingWaterCapacity": 1000
         }
     }
 }

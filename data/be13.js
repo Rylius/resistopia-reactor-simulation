@@ -25,6 +25,9 @@ import createPowerDistributor from './reactor/power/distributor';
 import createCooling from './reactor/cooling';
 import createCore from './reactor/core';
 import createBase from './reactor/base';
+import createPumps from './water/pumps';
+import createWaterTank from './water/tank';
+import createWaterTreatment from './water/treatment';
 
 export default function createProgramBe13(): Program {
     return {
@@ -36,6 +39,7 @@ export default function createProgramBe13(): Program {
             createCooling(config),
             createCore(config),
             createBase(config),
+            ...createPumps(config), createWaterTank(config), createWaterTreatment(config),
         ],
     };
 };

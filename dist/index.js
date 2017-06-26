@@ -724,8 +724,8 @@ function configValue(config, stateMachineId, propertyName) {
     return value(config, 'config', stateMachineId, propertyName);
 }
 
-var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxCooling": 200, "powerPerCooling": 0.25 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 } };
+var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxCooling": 200, "powerPerCooling": 0.25 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1298,6 +1298,163 @@ function createCore$1(config) {
     };
 }
 
+var PUMP_IDS = ['pump-a', 'pump-b', 'pump-c'];
+
+var HOUR_TO_TICK = 3600;
+
+function createPump(config, id) {
+    var maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK;
+    var initiallyEnabled = config.initial(id, 'enabled');
+    var filterHealth = config.initial(id, 'filterHealth');
+    var filterMaxHealth = config.initial(id, 'filterMaxHealth');
+
+    return {
+        id: id,
+        public: {
+            enabled: {
+                min: 0,
+                max: 1
+            }
+        },
+        output: ['water'],
+        initialState: function initialState() {
+            return {
+                maxProduction: maxProduction,
+                enabled: initiallyEnabled,
+                filterHealth: filterHealth,
+                filterMaxHealth: filterMaxHealth,
+                water: 0
+            };
+        },
+        update: function update(prevState, input) {
+            var efficiency = prevState.enabled ? clamp(prevState.filterHealth / prevState.filterMaxHealth, 0, 1) : 0;
+
+            return {
+                maxProduction: prevState.maxProduction,
+                enabled: prevState.enabled,
+                filterHealth: Math.max(prevState.filterHealth - 1, 0),
+                filterMaxHealth: prevState.filterMaxHealth,
+                water: prevState.maxProduction * efficiency
+            };
+        }
+    };
+}
+
+function createPumps(config) {
+    return PUMP_IDS.map(function (id) {
+        return createPump(config, id);
+    });
+}
+
+var WATER_TANK_ID = 'water-tank';
+
+function createWaterTank(config) {
+    var capacity = config.value(WATER_TANK_ID, 'capacity');
+    var initialWater = config.initial(WATER_TANK_ID, 'water');
+
+    return {
+        id: WATER_TANK_ID,
+        output: ['water'],
+        initialState: function initialState() {
+            return {
+                capacity: capacity,
+                water: initialWater
+            };
+        },
+        input: function input(prevState) {
+            return [].concat(toConsumableArray(PUMP_IDS.map(function (id) {
+                return {
+                    stateMachine: id,
+                    property: 'water',
+                    as: 'water-' + id
+                };
+            })), [{
+                // Pipe unused water back into the tank
+                stateMachine: WATER_TANK_ID,
+                property: 'water',
+                as: 'unusedWater',
+                priority: -100
+            }]);
+        },
+        update: function update(prevState, input) {
+            var water = input.unusedWater;
+            PUMP_IDS.forEach(function (id) {
+                return water += input['water-' + id];
+            });
+
+            return {
+                capacity: prevState.capacity,
+                water: clamp(water, 0, prevState.capacity)
+            };
+        }
+    };
+}
+
+var WATER_TREATMENT_ID = 'water-treatment';
+
+var HOUR_TO_TICK$1 = 3600;
+
+function createWaterTreatment(config) {
+    var maxWaterConsumption = config.value(WATER_TREATMENT_ID, 'maxWaterConsumption') / HOUR_TO_TICK$1;
+    var maxPowerConsumption = config.value(WATER_TREATMENT_ID, 'maxPowerConsumption');
+
+    var drinkingWaterCapacity = config.value(WATER_TREATMENT_ID, 'drinkingWaterCapacity');
+
+    var initialResourceCleaner = config.initial(WATER_TREATMENT_ID, 'resourceCleaner');
+    var initialResourceChlorine = config.initial(WATER_TREATMENT_ID, 'resourceChlorine');
+    var initialResourceMinerals = config.initial(WATER_TREATMENT_ID, 'resourceMinerals');
+
+    return {
+        id: WATER_TREATMENT_ID,
+        output: ['drinkingWater'],
+        initialState: function initialState() {
+            return {
+                resourceCleaner: initialResourceCleaner,
+                resourceChlorine: initialResourceChlorine,
+                resourceMinerals: initialResourceMinerals,
+                water: 0,
+                drinkingWater: 0
+            };
+        },
+        input: function input(prevState) {
+            var requiredWater = Math.max(maxWaterConsumption - prevState.water, 0);
+            var requiredPower = requiredWater / maxWaterConsumption * maxPowerConsumption;
+
+            return [{
+                stateMachine: WATER_TANK_ID,
+                property: 'water',
+                max: requiredWater,
+                priority: 50
+            }, {
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: requiredPower
+            }, {
+                stateMachine: WATER_TREATMENT_ID,
+                property: 'drinkingWater',
+                as: 'unusedDrinkingWater',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            var water = prevState.water + input.water;
+            var powerRequired = water / maxWaterConsumption * maxPowerConsumption;
+            var powerSatisfaction = powerRequired ? input.power / powerRequired : 1;
+            var treatedWater = water * powerSatisfaction;
+
+            var efficiency = treatedWater / maxWaterConsumption;
+
+            return {
+                resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
+                resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
+                resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
+                water: Math.max(water - treatedWater, 0),
+                drinkingWater: clamp(input.unusedDrinkingWater + treatedWater, 0, drinkingWaterCapacity)
+            };
+        }
+    };
+}
+
 var config$$1 = {
     initial: function initial$$1(stateMachine, property) {
         return initialValue(be13, stateMachine, property);
@@ -1310,7 +1467,7 @@ var config$$1 = {
 
 function createProgramBe13() {
     return {
-        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)]
+        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
 }
 
