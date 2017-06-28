@@ -1120,7 +1120,6 @@ function createPowerDistributor(config) {
         output: ['power', 'heat'],
         initialState: function initialState() {
             return {
-                cooling: cooling,
                 power: 0,
                 wastedPower: 0,
                 heat: minTemperature,
@@ -1156,7 +1155,6 @@ function createPowerDistributor(config) {
             var generatedHeat = input.unusedPower * powerToHeatFactor;
 
             var state = {
-                cooling: prevState.cooling,
                 power: input.power,
                 wastedPower: input.unusedPower,
                 heat: Math.max(input.heat + generatedHeat - prevState.cooling, minTemperature),

@@ -20,7 +20,6 @@ export default function createPowerDistributor(config: Config): StateMachine {
         output: ['power', 'heat'],
         initialState() {
             return {
-                cooling,
                 power: 0,
                 wastedPower: 0,
                 heat: minTemperature,
@@ -60,7 +59,6 @@ export default function createPowerDistributor(config: Config): StateMachine {
             const generatedHeat = input.unusedPower * powerToHeatFactor;
 
             const state = {
-                cooling: prevState.cooling,
                 power: input.power,
                 wastedPower: input.unusedPower,
                 heat: Math.max((input.heat + generatedHeat) - prevState.cooling, minTemperature),
