@@ -1205,8 +1205,8 @@ function createPump(config, id) {
 
             return {
                 maxProduction: prevState.maxProduction,
-                enabled: prevState.enabled,
-                filterHealth: Math.max(prevState.filterHealth - 1, 0),
+                enabled: prevState.enabled ? 1 : 0,
+                filterHealth: prevState.enabled ? Math.max(prevState.filterHealth - 1, 0) : prevState.filterHealth,
                 filterMaxHealth: prevState.filterMaxHealth,
                 water: prevState.maxProduction * efficiency
             };
