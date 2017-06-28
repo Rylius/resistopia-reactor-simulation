@@ -1157,7 +1157,7 @@ function createPowerDistributor(config) {
             var state = {
                 power: input.power,
                 wastedPower: input.unusedPower,
-                heat: Math.max(input.heat + generatedHeat - prevState.cooling, minTemperature),
+                heat: Math.max(input.heat + generatedHeat - cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0)
             };
 
