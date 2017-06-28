@@ -31,25 +31,24 @@ export default function createWaterTreatment(config: Config): StateMachine {
                 resourceChlorine: initialResourceChlorine,
                 resourceMinerals: initialResourceMinerals,
                 powerSatisfaction: 0,
+                requiredWater: 0,
+                requiredPower: 0,
                 water: 0,
                 drinkingWater: 0,
             };
         },
         input(prevState) {
-            const requiredWater = Math.max(maxWaterConsumption - prevState.water, 0);
-            const requiredPower = (requiredWater / maxWaterConsumption) * maxPowerConsumption;
-
             return [
                 {
                     stateMachine: WATER_TANK_ID,
                     property: 'water',
-                    max: requiredWater,
+                    max: prevState.requiredWater,
                     priority: 50,
                 },
                 {
                     stateMachine: POWER_DISTRIBUTOR_ID,
                     property: 'power',
-                    max: requiredPower,
+                    max: prevState.requiredPower,
                 },
                 {
                     stateMachine: WATER_TREATMENT_ID,
@@ -60,19 +59,26 @@ export default function createWaterTreatment(config: Config): StateMachine {
             ];
         },
         update(prevState, input) {
-            const water = prevState.water + input.water;
-            const powerRequired = (water / maxWaterConsumption) * maxPowerConsumption;
+            const totalWater = prevState.water + input.water;
+            const powerRequired = (totalWater / maxWaterConsumption) * maxPowerConsumption;
             const powerSatisfaction = powerRequired ? input.power / powerRequired : 1;
-            const treatedWater = water * powerSatisfaction;
+            const treatedWater = totalWater * powerSatisfaction;
 
             const efficiency = treatedWater / maxWaterConsumption;
+
+            const water = Math.max(totalWater - treatedWater, 0);
+
+            const requiredWater = Math.max(maxWaterConsumption - water, 0);
+            const requiredPower = clamp((water + requiredWater) / maxWaterConsumption, 0, 1) * maxPowerConsumption;
 
             return {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
                 powerSatisfaction,
-                water: Math.max(water - treatedWater, 0),
+                requiredWater,
+                requiredPower,
+                water,
                 drinkingWater: clamp(input.unusedDrinkingWater + treatedWater, 0, drinkingWaterCapacity),
             };
         },

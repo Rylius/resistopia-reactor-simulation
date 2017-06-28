@@ -1122,6 +1122,7 @@ function createPowerDistributor(config) {
             return {
                 cooling: cooling,
                 power: 0,
+                wastedPower: 0,
                 heat: minTemperature,
                 shutdownRemaining: 0
             };
@@ -1157,6 +1158,7 @@ function createPowerDistributor(config) {
             var state = {
                 cooling: prevState.cooling,
                 power: input.power,
+                wastedPower: input.unusedPower,
                 heat: Math.max(input.heat + generatedHeat - prevState.cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0)
             };
@@ -1429,23 +1431,22 @@ function createWaterTreatment(config) {
                 resourceChlorine: initialResourceChlorine,
                 resourceMinerals: initialResourceMinerals,
                 powerSatisfaction: 0,
+                requiredWater: 0,
+                requiredPower: 0,
                 water: 0,
                 drinkingWater: 0
             };
         },
         input: function input(prevState) {
-            var requiredWater = Math.max(maxWaterConsumption - prevState.water, 0);
-            var requiredPower = requiredWater / maxWaterConsumption * maxPowerConsumption;
-
             return [{
                 stateMachine: WATER_TANK_ID,
                 property: 'water',
-                max: requiredWater,
+                max: prevState.requiredWater,
                 priority: 50
             }, {
                 stateMachine: POWER_DISTRIBUTOR_ID,
                 property: 'power',
-                max: requiredPower
+                max: prevState.requiredPower
             }, {
                 stateMachine: WATER_TREATMENT_ID,
                 property: 'drinkingWater',
@@ -1454,19 +1455,26 @@ function createWaterTreatment(config) {
             }];
         },
         update: function update(prevState, input) {
-            var water = prevState.water + input.water;
-            var powerRequired = water / maxWaterConsumption * maxPowerConsumption;
+            var totalWater = prevState.water + input.water;
+            var powerRequired = totalWater / maxWaterConsumption * maxPowerConsumption;
             var powerSatisfaction = powerRequired ? input.power / powerRequired : 1;
-            var treatedWater = water * powerSatisfaction;
+            var treatedWater = totalWater * powerSatisfaction;
 
             var efficiency = treatedWater / maxWaterConsumption;
+
+            var water = Math.max(totalWater - treatedWater, 0);
+
+            var requiredWater = Math.max(maxWaterConsumption - water, 0);
+            var requiredPower = clamp((water + requiredWater) / maxWaterConsumption, 0, 1) * maxPowerConsumption;
 
             return {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
                 powerSatisfaction: powerSatisfaction,
-                water: Math.max(water - treatedWater, 0),
+                requiredWater: requiredWater,
+                requiredPower: requiredPower,
+                water: water,
                 drinkingWater: clamp(input.unusedDrinkingWater + treatedWater, 0, drinkingWaterCapacity)
             };
         }
