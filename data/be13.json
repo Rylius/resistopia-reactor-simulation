@@ -83,7 +83,7 @@
             "energyRequired": 150
         },
         "base": {
-            "powerRequired": 75
+            "powerRequired": 60
         },
         "pump-a": {
             "maxProduction": 3200
