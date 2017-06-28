@@ -22,6 +22,7 @@ export default function createPowerDistributor(config: Config): StateMachine {
             return {
                 cooling,
                 power: 0,
+                wastedPower: 0,
                 heat: minTemperature,
                 shutdownRemaining: 0,
             };
@@ -61,6 +62,7 @@ export default function createPowerDistributor(config: Config): StateMachine {
             const state = {
                 cooling: prevState.cooling,
                 power: input.power,
+                wastedPower: input.unusedPower,
                 heat: Math.max((input.heat + generatedHeat) - prevState.cooling, minTemperature),
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
             };
