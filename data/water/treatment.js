@@ -30,6 +30,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
                 resourceCleaner: initialResourceCleaner,
                 resourceChlorine: initialResourceChlorine,
                 resourceMinerals: initialResourceMinerals,
+                powerSatisfaction: 0,
                 water: 0,
                 drinkingWater: 0,
             };
@@ -70,6 +71,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
+                powerSatisfaction,
                 water: Math.max(water - treatedWater, 0),
                 drinkingWater: clamp(input.unusedDrinkingWater + treatedWater, 0, drinkingWaterCapacity),
             };
