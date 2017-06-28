@@ -75,8 +75,9 @@
             "shutdownDuration": 10
         },
         "reactor-cooling": {
-            "maxCooling": 200,
-            "powerPerCooling": 0.25
+            "maxPowerConsumption": 10,
+            "maxWaterConsumption": 3000,
+            "maxCooling": 200
         },
         "core": {
             "energyRequired": 150

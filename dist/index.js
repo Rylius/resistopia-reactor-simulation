@@ -725,7 +725,7 @@ function configValue(config, stateMachineId, propertyName) {
 }
 
 var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxCooling": 200, "powerPerCooling": 0.25 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 200 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 75 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1170,140 +1170,12 @@ function createPowerDistributor(config) {
     };
 }
 
-var COOLING_ID = 'reactor-cooling';
-
-function createCooling(config) {
-    var maxCooling = config.value(COOLING_ID, 'maxCooling');
-    var powerPerCooling = config.value(COOLING_ID, 'powerPerCooling');
-
-    return {
-        id: COOLING_ID,
-        public: {
-            cooling: {
-                min: 0,
-                max: maxCooling
-            }
-        },
-        initialState: function initialState() {
-            return {
-                cooling: 0,
-                effectiveCooling: 0,
-                powerRequired: 0,
-                powerConsumed: 0,
-                powerSatisfaction: 1
-            };
-        },
-        input: function input(prevState) {
-            return [{
-                stateMachine: POWER_DISTRIBUTOR_ID,
-                property: 'power',
-                max: prevState.powerRequired
-            }, {
-                stateMachine: REACTOR_ID,
-                property: 'heat',
-                max: prevState.effectiveCooling
-            }];
-        },
-        update: function update(prevState, input) {
-            var powerRequired = prevState.cooling * powerPerCooling;
-
-            var active = prevState.cooling > 0;
-            var powerSatisfaction = active ? input.power / powerRequired : 1;
-            var effectiveCooling = active ? prevState.cooling * powerSatisfaction : 0;
-
-            return {
-                cooling: prevState.cooling,
-                effectiveCooling: effectiveCooling,
-                powerRequired: powerRequired,
-                powerConsumed: input.power,
-                powerSatisfaction: powerSatisfaction
-            };
-        }
-    };
-}
-
-var CORE_ID = 'core';
-
-function createCore(config) {
-    var energyRequired = config.value(CORE_ID, 'energyRequired');
-
-    return {
-        id: CORE_ID,
-        initialState: function initialState() {
-            return {
-                energyRequired: energyRequired,
-                energyConsumed: 0,
-                energyFromDistributor: 0,
-                energyFromCapacitor: 0,
-                energyMissing: 0,
-                energySatisfaction: 0
-            };
-        },
-        input: function input(prevState) {
-            return [{
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'coreEnergy',
-                as: 'energy',
-                max: prevState.energyRequired
-            }, {
-                stateMachine: ENERGY_CAPACITOR_ID,
-                property: 'energy',
-                as: 'capacitorEnergy',
-                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
-            }];
-        },
-        update: function update(prevState, input) {
-            // It's possible we drew too much energy in one tick, so discard any excess
-            var energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
-            return {
-                energyRequired: prevState.energyRequired,
-                energyConsumed: energy,
-                energyFromDistributor: input.energy,
-                energyFromCapacitor: input.capacitorEnergy,
-                energyMissing: Math.max(prevState.energyRequired - energy, 0),
-                energySatisfaction: energy / prevState.energyRequired
-            };
-        }
-    };
-}
-
-var BASE_ID = 'base';
-
-function createCore$1(config) {
-    var powerRequired = config.value(BASE_ID, 'powerRequired');
-
-    return {
-        id: BASE_ID,
-        initialState: function initialState() {
-            return {
-                powerRequired: powerRequired,
-                powerConsumed: 0,
-                powerSatisfaction: 0
-            };
-        },
-        input: function input(prevState) {
-            return [{
-                stateMachine: POWER_DISTRIBUTOR_ID,
-                property: 'power',
-                max: prevState.powerRequired
-            }];
-        },
-        update: function update(prevState, input) {
-            return {
-                powerRequired: prevState.powerRequired,
-                powerConsumed: input.power,
-                powerSatisfaction: input.power / prevState.powerRequired
-            };
-        }
-    };
-}
-
 var PUMP_IDS = ['pump-a', 'pump-b', 'pump-c'];
 
-var HOUR_TO_TICK = 3600;
+var HOUR_TO_TICK$1 = 3600;
 
 function createPump(config, id) {
-    var maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK;
+    var maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK$1;
     var initiallyEnabled = config.initial(id, 'enabled');
     var filterHealth = config.initial(id, 'filterHealth');
     var filterMaxHealth = config.initial(id, 'filterMaxHealth');
@@ -1390,12 +1262,156 @@ function createWaterTank(config) {
     };
 }
 
+var COOLING_ID = 'reactor-cooling';
+
+var HOUR_TO_TICK = 3600;
+
+function createCooling(config) {
+    var maxPowerConsumption = config.value(COOLING_ID, 'maxPowerConsumption');
+    var maxWaterConsumption = config.value(COOLING_ID, 'maxWaterConsumption') / HOUR_TO_TICK;
+    var maxCooling = config.value(COOLING_ID, 'maxCooling');
+
+    return {
+        id: COOLING_ID,
+        public: {
+            cooling: {
+                min: 0,
+                max: maxCooling
+            }
+        },
+        initialState: function initialState() {
+            return {
+                cooling: 0,
+                effectiveCooling: 0,
+                powerRequired: 0,
+                waterRequired: 0,
+                powerSatisfaction: 1,
+                waterSatisfaction: 1
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: prevState.powerRequired
+            }, {
+                stateMachine: WATER_TANK_ID,
+                property: 'water',
+                max: prevState.waterRequired,
+                priority: 100
+            }, {
+                stateMachine: REACTOR_ID,
+                property: 'heat',
+                max: prevState.effectiveCooling
+            }];
+        },
+        update: function update(prevState, input) {
+            var cooling = clamp(prevState.cooling / maxCooling, 0, 1);
+            var active = cooling > 0;
+
+            var powerRequired = maxPowerConsumption * cooling;
+            var powerSatisfaction = active ? clamp(input.power / powerRequired, 0, 1) : 1;
+
+            // Water consumption depends on pump having enough power
+            var waterRequired = maxWaterConsumption * Math.min(cooling, powerSatisfaction);
+            var waterSatisfaction = active ? clamp(input.water / (maxWaterConsumption * cooling), 0, 1) : 1;
+
+            var effectiveCooling = active ? prevState.cooling * Math.min(powerSatisfaction, waterSatisfaction) : 0;
+
+            return {
+                cooling: prevState.cooling,
+                effectiveCooling: effectiveCooling,
+                powerRequired: powerRequired,
+                waterRequired: waterRequired,
+                powerSatisfaction: powerSatisfaction,
+                waterSatisfaction: waterSatisfaction
+            };
+        }
+    };
+}
+
+var CORE_ID = 'core';
+
+function createCore(config) {
+    var energyRequired = config.value(CORE_ID, 'energyRequired');
+
+    return {
+        id: CORE_ID,
+        initialState: function initialState() {
+            return {
+                energyRequired: energyRequired,
+                energyConsumed: 0,
+                energyFromDistributor: 0,
+                energyFromCapacitor: 0,
+                energyMissing: 0,
+                energySatisfaction: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: ENERGY_DISTRIBUTOR_ID,
+                property: 'coreEnergy',
+                as: 'energy',
+                max: prevState.energyRequired
+            }, {
+                stateMachine: ENERGY_CAPACITOR_ID,
+                property: 'energy',
+                as: 'capacitorEnergy',
+                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
+            }];
+        },
+        update: function update(prevState, input) {
+            // It's possible we drew too much energy in one tick, so discard any excess
+            var energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
+            return {
+                energyRequired: prevState.energyRequired,
+                energyConsumed: energy,
+                energyFromDistributor: input.energy,
+                energyFromCapacitor: input.capacitorEnergy,
+                energyMissing: Math.max(prevState.energyRequired - energy, 0),
+                energySatisfaction: energy / prevState.energyRequired
+            };
+        }
+    };
+}
+
+var BASE_ID = 'base';
+
+function createCore$1(config) {
+    var powerRequired = config.value(BASE_ID, 'powerRequired');
+
+    return {
+        id: BASE_ID,
+        initialState: function initialState() {
+            return {
+                powerRequired: powerRequired,
+                powerConsumed: 0,
+                powerSatisfaction: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: prevState.powerRequired
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                powerRequired: prevState.powerRequired,
+                powerConsumed: input.power,
+                powerSatisfaction: input.power / prevState.powerRequired
+            };
+        }
+    };
+}
+
 var WATER_TREATMENT_ID = 'water-treatment';
 
-var HOUR_TO_TICK$1 = 3600;
+var HOUR_TO_TICK$2 = 3600;
 
 function createWaterTreatment(config) {
-    var maxWaterConsumption = config.value(WATER_TREATMENT_ID, 'maxWaterConsumption') / HOUR_TO_TICK$1;
+    var maxWaterConsumption = config.value(WATER_TREATMENT_ID, 'maxWaterConsumption') / HOUR_TO_TICK$2;
     var maxPowerConsumption = config.value(WATER_TREATMENT_ID, 'maxPowerConsumption');
 
     var drinkingWaterCapacity = config.value(WATER_TREATMENT_ID, 'drinkingWaterCapacity');
@@ -1412,6 +1428,7 @@ function createWaterTreatment(config) {
                 resourceCleaner: initialResourceCleaner,
                 resourceChlorine: initialResourceChlorine,
                 resourceMinerals: initialResourceMinerals,
+                powerSatisfaction: 0,
                 water: 0,
                 drinkingWater: 0
             };
@@ -1448,6 +1465,7 @@ function createWaterTreatment(config) {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
+                powerSatisfaction: powerSatisfaction,
                 water: Math.max(water - treatedWater, 0),
                 drinkingWater: clamp(input.unusedDrinkingWater + treatedWater, 0, drinkingWaterCapacity)
             };
