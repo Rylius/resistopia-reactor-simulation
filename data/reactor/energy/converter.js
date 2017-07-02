@@ -10,6 +10,7 @@ export const ENERGY_CONVERTER_ID = 'energy-converter';
 export default function createEnergyConverter(config: Config): StateMachine {
     const energyToPower = config.value(ENERGY_CONVERTER_ID, 'energyToPowerFactor');
     const maxConversion = config.value(ENERGY_CONVERTER_ID, 'maxConversion');
+    const initialEnergyConversion = config.initial(ENERGY_CONVERTER_ID, 'energyConversion');
 
     return {
         id: ENERGY_CONVERTER_ID,
@@ -23,7 +24,7 @@ export default function createEnergyConverter(config: Config): StateMachine {
         initialState() {
             return {
                 energy: 0,
-                energyConversion: 0,
+                energyConversion: initialEnergyConversion,
                 power: 0,
             }
         },

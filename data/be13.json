@@ -12,6 +12,9 @@
             "capacitorWeight": 0.5,
             "coreWeight": 1
         },
+        "energy-converter": {
+            "energyConversion": 100
+        },
         "pump-a": {
             "enabled": 1,
             "filterHealth": 172800,

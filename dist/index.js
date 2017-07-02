@@ -724,7 +724,7 @@ function configValue(config, stateMachineId, propertyName) {
     return value(config, 'config', stateMachineId, propertyName);
 }
 
-var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
+var initial$2 = { "storage-matter": { "matter": 100000000 }, "storage-antimatter": { "antimatter": 100000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-converter": { "energyConversion": 100 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
 var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 200 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
@@ -1034,6 +1034,7 @@ var ENERGY_CONVERTER_ID = 'energy-converter';
 function createEnergyConverter(config) {
     var energyToPower = config.value(ENERGY_CONVERTER_ID, 'energyToPowerFactor');
     var maxConversion = config.value(ENERGY_CONVERTER_ID, 'maxConversion');
+    var initialEnergyConversion = config.initial(ENERGY_CONVERTER_ID, 'energyConversion');
 
     return {
         id: ENERGY_CONVERTER_ID,
@@ -1047,7 +1048,7 @@ function createEnergyConverter(config) {
         initialState: function initialState() {
             return {
                 energy: 0,
-                energyConversion: 0,
+                energyConversion: initialEnergyConversion,
                 power: 0
             };
         },
