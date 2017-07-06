@@ -1400,7 +1400,7 @@ function createWaterTreatment(config) {
                 resourceMinerals: initialResourceMinerals,
                 powerSatisfaction: 0,
                 requiredWater: 0,
-                requiredPower: 0,
+                requiredPower: maxPowerConsumption,
                 water: 0,
                 drinkingWater: 0
             };
