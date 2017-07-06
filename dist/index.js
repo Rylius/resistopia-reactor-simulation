@@ -1425,7 +1425,7 @@ function createWaterTreatment(config) {
         update: function update(prevState, input) {
             var totalWater = prevState.water + input.water;
             var powerRequired = totalWater / maxWaterConsumption * maxPowerConsumption;
-            var powerSatisfaction = powerRequired ? input.power / powerRequired : 1;
+            var powerSatisfaction = powerRequired ? input.power / powerRequired : 0;
             var treatedWater = totalWater * powerSatisfaction;
 
             var efficiency = treatedWater / maxWaterConsumption;
@@ -1439,7 +1439,7 @@ function createWaterTreatment(config) {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
-                powerSatisfaction: powerSatisfaction,
+                powerSatisfaction: requiredPower > 0 ? powerSatisfaction : 1,
                 requiredWater: requiredWater,
                 requiredPower: requiredPower,
                 water: water,

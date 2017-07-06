@@ -61,7 +61,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
         update(prevState, input) {
             const totalWater = prevState.water + input.water;
             const powerRequired = (totalWater / maxWaterConsumption) * maxPowerConsumption;
-            const powerSatisfaction = powerRequired ? input.power / powerRequired : 1;
+            const powerSatisfaction = powerRequired ? input.power / powerRequired : 0;
             const treatedWater = totalWater * powerSatisfaction;
 
             const efficiency = treatedWater / maxWaterConsumption;
@@ -75,7 +75,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
                 resourceChlorine: Math.max(prevState.resourceChlorine - efficiency, 0),
                 resourceMinerals: Math.max(prevState.resourceMinerals - efficiency, 0),
-                powerSatisfaction,
+                powerSatisfaction: requiredPower > 0 ? powerSatisfaction : 1,
                 requiredWater,
                 requiredPower,
                 water,
