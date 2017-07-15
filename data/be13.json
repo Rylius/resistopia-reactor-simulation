@@ -19,7 +19,7 @@
             "energyConversion": 100
         },
         "power-capacitor": {
-            "power": 504000
+            "power": 576000
         },
         "pump-a": {
             "enabled": 1,
@@ -84,7 +84,7 @@
             "shutdownDuration": 10
         },
         "power-capacitor": {
-            "capacity": 504000
+            "capacity": 576000
         },
         "reactor-cooling": {
             "maxPowerConsumption": 10,
