@@ -22,6 +22,7 @@ import createEnergyDistributor from './reactor/energy/distributor';
 import createEnergyConverter from './reactor/energy/converter';
 import createEnergyCapacitor from './reactor/energy/capacitor';
 import createPowerDistributor from './reactor/power/distributor';
+import createPowerCapacitor from './reactor/power/capacitor';
 import createCooling from './reactor/cooling';
 import createCore from './reactor/core';
 import createBase from './reactor/base';
@@ -35,7 +36,7 @@ export default function createProgramBe13(): Program {
             createStorageMatter(config), createStorageAntimatter(config),
             createReactor(config),
             createEnergyDistributor(config), createEnergyCapacitor(config), createEnergyConverter(config),
-            createPowerDistributor(config),
+            createPowerDistributor(config), createPowerCapacitor(config),
             createCooling(config),
             createCore(config),
             createBase(config),

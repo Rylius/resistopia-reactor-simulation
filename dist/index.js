@@ -724,8 +724,8 @@ function configValue(config, stateMachineId, propertyName) {
     return value(config, 'config', stateMachineId, propertyName);
 }
 
-var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 270000 }, "energy-converter": { "energyConversion": 100 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 200 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
+var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 270000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 504000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 200, "energyToHeatFactor": 1.1, "shutdownDuration": 10, "cooling": 50 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 2, "cooling": 50, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 504000 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 200 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1172,6 +1172,50 @@ function createPowerDistributor(config) {
     };
 }
 
+var POWER_CAPACITOR_ID = 'power-capacitor';
+
+function createPowerCapacitor(config) {
+    var capacity = config.value(POWER_CAPACITOR_ID, 'capacity');
+    var initialPower = config.initial(POWER_CAPACITOR_ID, 'power');
+
+    return {
+        id: POWER_CAPACITOR_ID,
+        public: {
+            charge: {
+                min: 0,
+                max: 1
+            }
+        },
+        output: ['power'],
+        initialState: function initialState() {
+            return {
+                capacity: capacity,
+                power: initialPower,
+                charge: 1
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_DISTRIBUTOR_ID,
+                property: 'power',
+                max: prevState.charge ? prevState.capacity - prevState.power : 0
+            }, {
+                stateMachine: POWER_CAPACITOR_ID,
+                property: 'power',
+                as: 'storedPower',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input) {
+            return {
+                capacity: prevState.capacity,
+                power: input.storedPower + input.power,
+                charge: prevState.charge
+            };
+        }
+    };
+}
+
 var PUMP_IDS = ['pump-a', 'pump-b', 'pump-c'];
 
 var HOUR_TO_TICK$1 = 3600;
@@ -1502,7 +1546,7 @@ var config$$1 = {
 
 function createProgramBe13() {
     return {
-        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
+        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
 }
 
