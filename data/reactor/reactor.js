@@ -38,6 +38,7 @@ export default function createReactor(config: Config): StateMachine {
                 storedAntimatter: 0,
                 shutdownRemaining: 0,
                 energy: 0,
+                energyWasted: 0,
                 heat: minTemperature,
             };
         },
@@ -78,6 +79,7 @@ export default function createReactor(config: Config): StateMachine {
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 energy: 0,
+                energyWasted: input.energy,
                 heat: Math.max(input.heat + (input.energy * energyToHeat) - reactorCooling, minTemperature),
             };
 
