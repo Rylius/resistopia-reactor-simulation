@@ -9,6 +9,7 @@ export const ENERGY_CAPACITOR_ID = 'energy-capacitor';
 
 export default function createEnergyCapacitor(config: Config): StateMachine {
     const capacity = config.value(ENERGY_CAPACITOR_ID, 'capacity');
+    const initialEnergy = config.initial(ENERGY_CAPACITOR_ID, 'energy');
 
     return {
         id: ENERGY_CAPACITOR_ID,
@@ -16,7 +17,7 @@ export default function createEnergyCapacitor(config: Config): StateMachine {
         initialState() {
             return {
                 capacity: capacity,
-                energy: 0,
+                energy: initialEnergy,
             }
         },
         input(prevState) {

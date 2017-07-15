@@ -12,6 +12,9 @@
             "capacitorWeight": 0.5,
             "coreWeight": 1
         },
+        "energy-capacitor": {
+            "energy": 270000
+        },
         "energy-converter": {
             "energyConversion": 100
         },
