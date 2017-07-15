@@ -79,8 +79,8 @@
         "power-distributor": {
             "minTemperature": 30,
             "maxTemperature": 200,
-            "powerToHeatFactor": 2,
-            "cooling": 39.99,
+            "powerToHeatFactor": 0.01,
+            "cooling": 0.19,
             "shutdownDuration": 10
         },
         "power-capacitor": {
