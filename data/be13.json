@@ -80,7 +80,7 @@
             "minTemperature": 30,
             "maxTemperature": 200,
             "powerToHeatFactor": 2,
-            "cooling": 50,
+            "cooling": 39.99,
             "shutdownDuration": 10
         },
         "power-capacitor": {
