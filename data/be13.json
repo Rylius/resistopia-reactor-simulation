@@ -1,10 +1,10 @@
 {
     "initial": {
         "storage-matter": {
-            "matter": 100000000
+            "matter": 432000000
         },
         "storage-antimatter": {
-            "antimatter": 100000000
+            "antimatter": 432000000
         },
         "reactor": {},
         "energy-distributor": {
