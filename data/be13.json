@@ -61,10 +61,10 @@
             "maxOptimalTemperature": 2000,
             "maxOperatingTemperature": 5000,
             "maxEnergyGeneration": 300,
-            "maxHeatGeneration": 200,
-            "energyToHeatFactor": 1.1,
+            "maxHeatGeneration": 2,
+            "energyToHeatFactor": 0.01,
             "shutdownDuration": 10,
-            "cooling": 50
+            "cooling": 0.5
         },
         "energy-distributor": {
             "outputBuffer": 200
@@ -89,7 +89,7 @@
         "reactor-cooling": {
             "maxPowerConsumption": 10,
             "maxWaterConsumption": 3000,
-            "maxCooling": 200
+            "maxCooling": 2
         },
         "core": {
             "energyRequired": 150
