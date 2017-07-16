@@ -40,6 +40,7 @@
             "water": 30000
         },
         "water-treatment": {
+            "drinkingWater": 700,
             "resourceCleaner": 345600,
             "resourceChlorine": 345600,
             "resourceMinerals": 345600

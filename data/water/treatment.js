@@ -18,6 +18,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
 
     const drinkingWaterCapacity = config.value(WATER_TREATMENT_ID, 'drinkingWaterCapacity');
 
+    const initialDrinkingWater = config.initial(WATER_TREATMENT_ID, 'drinkingWater');
     const initialResourceCleaner = config.initial(WATER_TREATMENT_ID, 'resourceCleaner');
     const initialResourceChlorine = config.initial(WATER_TREATMENT_ID, 'resourceChlorine');
     const initialResourceMinerals = config.initial(WATER_TREATMENT_ID, 'resourceMinerals');
@@ -34,7 +35,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
                 requiredWater: 0,
                 requiredPower: maxPowerConsumption,
                 water: 0,
-                drinkingWater: 0,
+                drinkingWater: initialDrinkingWater,
             };
         },
         input(prevState) {
