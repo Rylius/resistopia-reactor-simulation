@@ -32,6 +32,9 @@ import createWaterTreatment from './water/treatment';
 
 export default function createProgramBe13(): Program {
     return {
+        globals: {
+            lockdown: 0,
+        },
         stateMachines: [
             createStorageMatter(config), createStorageAntimatter(config),
             createReactor(config),

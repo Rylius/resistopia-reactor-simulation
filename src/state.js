@@ -1,10 +1,11 @@
 // @flow
 
-import type {Program, StateMachine} from './program';
+import type {Globals, Program, StateMachine} from './program';
 
 export type State = {|
     tick: number,
     time: number,
+    globals: Globals,
     stateMachines: { [id: string]: StateMachineState },
 |}
 
@@ -26,6 +27,7 @@ export function createInitialState(program: Program): State {
     const state: State = {
         tick: 0,
         time: Date.now(),
+        globals: {},
         stateMachines: {},
     };
 

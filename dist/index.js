@@ -9,6 +9,7 @@ function createInitialState(program) {
     var state = {
         tick: 0,
         time: Date.now(),
+        globals: {},
         stateMachines: {}
     };
 
@@ -1549,6 +1550,9 @@ var config$$1 = {
 
 function createProgramBe13() {
     return {
+        globals: {
+            lockdown: 0
+        },
         stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
 }
