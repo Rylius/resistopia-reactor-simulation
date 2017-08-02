@@ -98,6 +98,7 @@ function update(program, prevState) {
     var state = {
         tick: prevState.tick + 1,
         time: Date.now(),
+        globals: prevState.globals,
         stateMachines: {}
     };
 
@@ -143,7 +144,7 @@ function update(program, prevState) {
             return;
         }
 
-        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], inputs[stateMachine.id]);
+        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], inputs[stateMachine.id], state.globals);
     });
 
     // console.log(`tick ${state.tick}`);
@@ -725,8 +726,8 @@ function configValue(config, stateMachineId, propertyName) {
     return value(config, 'config', stateMachineId, propertyName);
 }
 
-var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 270000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 576000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "shutdownDuration": 10, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 576000 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 2 }, "core": { "energyRequired": 150 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
+var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 270000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 576000 }, "core": { "nanites": 36000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 5000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "shutdownDuration": 10, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 270000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 576000 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 2 }, "core": { "energyRequired": 150, "powerCycleDuration": 120, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1382,13 +1383,22 @@ function createCooling(config) {
 var CORE_ID = 'core';
 
 function createCore(config) {
-    var energyRequired = config.value(CORE_ID, 'energyRequired');
+    var maxEnergyRequired = config.value(CORE_ID, 'energyRequired');
+    var powerCycleDuration = config.value(CORE_ID, 'powerCycleDuration');
+    var nanitesConsumption = config.value(CORE_ID, 'nanitesConsumption');
+    var nanitesRegeneration = config.value(CORE_ID, 'nanitesRegeneration');
+    var nanitesCapacity = config.value(CORE_ID, 'nanitesCapacity');
+
+    var initialNanites = config.initial(CORE_ID, 'nanites');
 
     return {
         id: CORE_ID,
         initialState: function initialState() {
             return {
-                energyRequired: energyRequired,
+                energyRequired: maxEnergyRequired,
+                activity: powerCycleDuration,
+                nanites: initialNanites,
+                nanitesCapacity: nanitesCapacity,
                 energyConsumed: 0,
                 energyFromDistributor: 0,
                 energyFromCapacitor: 0,
@@ -1409,11 +1419,20 @@ function createCore(config) {
                 max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
             }];
         },
-        update: function update(prevState, input) {
+        update: function update(prevState, input, globals) {
+            var disabled = globals.lockdown || prevState.nanites <= 0;
+
+            var activity = disabled ? 0 : clamp(prevState.activity / powerCycleDuration + (globals.lockdown ? -1 : 1), 0, 1);
+            var energyRequired = maxEnergyRequired * activity;
+
             // It's possible we drew too much energy in one tick, so discard any excess
-            var energy = Math.min(input.energy + input.capacitorEnergy, prevState.energyRequired);
+            var energy = Math.min(input.energy + input.capacitorEnergy, energyRequired);
+
             return {
-                energyRequired: prevState.energyRequired,
+                energyRequired: energyRequired,
+                activity: activity * powerCycleDuration,
+                nanites: clamp(prevState.nanites + (globals.lockdown ? nanitesRegeneration : -nanitesConsumption), 0, prevState.nanitesCapacity),
+                nanitesCapacity: prevState.nanitesCapacity,
                 energyConsumed: energy,
                 energyFromDistributor: input.energy,
                 energyFromCapacitor: input.capacitorEnergy,

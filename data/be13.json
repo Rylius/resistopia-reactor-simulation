@@ -21,6 +21,9 @@
         "power-capacitor": {
             "power": 576000
         },
+        "core": {
+            "nanites": 36000
+        },
         "pump-a": {
             "enabled": 1,
             "filterHealth": 172800,
@@ -93,7 +96,11 @@
             "maxCooling": 2
         },
         "core": {
-            "energyRequired": 150
+            "energyRequired": 150,
+            "powerCycleDuration": 120,
+            "nanitesConsumption": 1,
+            "nanitesRegeneration": 3,
+            "nanitesCapacity": 65500
         },
         "base": {
             "powerRequired": 60,
