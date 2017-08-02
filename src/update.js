@@ -59,6 +59,7 @@ export default function update(program: Program, prevState: State) {
     const state = {
         tick: prevState.tick + 1,
         time: Date.now(),
+        globals: prevState.globals,
         stateMachines: {},
     };
 
@@ -101,7 +102,7 @@ export default function update(program: Program, prevState: State) {
             return;
         }
 
-        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], inputs[stateMachine.id]);
+        state.stateMachines[stateMachine.id] = stateMachine.update(prevState.stateMachines[stateMachine.id], inputs[stateMachine.id], state.globals);
     });
 
     // console.log(`tick ${state.tick}`);
