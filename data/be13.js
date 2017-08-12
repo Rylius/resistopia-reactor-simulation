@@ -33,6 +33,7 @@ import createWaterTreatment from './water/treatment';
 export default function createProgramBe13(): Program {
     return {
         globals: {
+            effects: 1, // Sound/light, not really used in the simulation itself
             lockdown: 0,
         },
         stateMachines: [
