@@ -737,50 +737,14 @@ var be13 = {
 	config: config$1
 };
 
-var STORAGE_MATTER_ID = 'storage-matter';
-
-function createStorageMatter(config) {
-    var maxReleasedMatter = config.value(STORAGE_MATTER_ID, 'maxReleasedMatter');
-
-    return {
-        id: STORAGE_MATTER_ID,
-        public: {
-            releasedMatterPerTick: {
-                min: 0,
-                max: maxReleasedMatter
-            }
-        },
-        output: ['releasedMatter'],
-        initialState: function initialState() {
-            return {
-                matter: config.initial(STORAGE_MATTER_ID, 'matter'),
-                releasedMatterPerTick: 0,
-                releasedMatter: 0
-            };
-        },
-        input: function input(prevState) {
-            return [{
-                stateMachine: STORAGE_MATTER_ID,
-                property: 'releasedMatter',
-                as: 'unusedMatter',
-                priority: -100
-            }];
-        },
-        update: function update(prevState, input) {
-            var releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
-            return {
-                matter: prevState.matter - releasedMatter + input.unusedMatter,
-                releasedMatterPerTick: prevState.releasedMatterPerTick,
-                releasedMatter: releasedMatter
-            };
-        }
-    };
-}
-
 var STORAGE_ANTIMATTER_ID = 'storage-antimatter';
 
 function createStorageAntimatter(config) {
     var maxReleasedAntimatter = config.value(STORAGE_ANTIMATTER_ID, 'maxReleasedAntimatter');
+
+    var maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
+    var maxAntimatterInput = config.value(REACTOR_ID, 'maxAntimatterInput');
+    var energyToAntimatter = maxEnergyGeneration / maxAntimatterInput;
 
     return {
         id: STORAGE_ANTIMATTER_ID,
@@ -806,8 +770,9 @@ function createStorageAntimatter(config) {
                 priority: -100
             }];
         },
-        update: function update(prevState, input) {
-            var releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
+        update: function update(prevState, input, globals) {
+            var release = prevState.releasedAntimatterPerTick + globals.camouflageEnergyRequired * energyToAntimatter;
+            var releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: prevState.antimatter - releasedAntimatter + input.unusedAntimatter,
                 releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
@@ -877,7 +842,7 @@ function createReactor(config) {
                 priority: -100
             }];
         },
-        update: function update(prevState, input) {
+        update: function update(prevState, input, globals) {
             var state = {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
@@ -923,6 +888,51 @@ function createReactor(config) {
             }
 
             return state;
+        }
+    };
+}
+
+var STORAGE_MATTER_ID = 'storage-matter';
+
+function createStorageMatter(config) {
+    var maxReleasedMatter = config.value(STORAGE_MATTER_ID, 'maxReleasedMatter');
+
+    var maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
+    var maxMatterInput = config.value(REACTOR_ID, 'maxMatterInput');
+    var energyToMatter = maxEnergyGeneration / maxMatterInput;
+
+    return {
+        id: STORAGE_MATTER_ID,
+        public: {
+            releasedMatterPerTick: {
+                min: 0,
+                max: maxReleasedMatter
+            }
+        },
+        output: ['releasedMatter'],
+        initialState: function initialState() {
+            return {
+                matter: config.initial(STORAGE_MATTER_ID, 'matter'),
+                releasedMatterPerTick: 0,
+                releasedMatter: 0
+            };
+        },
+        input: function input(prevState) {
+            return [{
+                stateMachine: STORAGE_MATTER_ID,
+                property: 'releasedMatter',
+                as: 'unusedMatter',
+                priority: -100
+            }];
+        },
+        update: function update(prevState, input, globals) {
+            var release = prevState.releasedMatterPerTick + globals.camouflageEnergyRequired * energyToMatter;
+            var releasedMatter = Math.min(release, prevState.matter);
+            return {
+                matter: prevState.matter - releasedMatter + input.unusedMatter,
+                releasedMatterPerTick: prevState.releasedMatterPerTick,
+                releasedMatter: releasedMatter
+            };
         }
     };
 }

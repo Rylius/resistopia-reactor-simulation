@@ -3,10 +3,16 @@
 import type {StateMachine} from '../../../src/program';
 import type {Config} from '../../be13';
 
+import {REACTOR_ID} from '../reactor';
+
 export const STORAGE_MATTER_ID = 'storage-matter';
 
 export default function createStorageMatter(config: Config): StateMachine {
     const maxReleasedMatter = config.value(STORAGE_MATTER_ID, 'maxReleasedMatter');
+
+    const maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
+    const maxMatterInput = config.value(REACTOR_ID, 'maxMatterInput');
+    const energyToMatter = maxEnergyGeneration / maxMatterInput;
 
     return {
         id: STORAGE_MATTER_ID,
@@ -34,8 +40,9 @@ export default function createStorageMatter(config: Config): StateMachine {
                 },
             ];
         },
-        update(prevState, input) {
-            const releasedMatter = Math.min(prevState.releasedMatterPerTick, prevState.matter);
+        update(prevState, input, globals) {
+            const release = prevState.releasedMatterPerTick + (globals.camouflageEnergyRequired * energyToMatter);
+            const releasedMatter = Math.min(release, prevState.matter);
             return {
                 matter: (prevState.matter - releasedMatter) + input.unusedMatter,
                 releasedMatterPerTick: prevState.releasedMatterPerTick,

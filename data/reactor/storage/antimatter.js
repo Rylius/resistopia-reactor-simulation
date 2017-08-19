@@ -3,10 +3,16 @@
 import type {StateMachine} from '../../../src/program';
 import type {Config} from '../../be13';
 
+import {REACTOR_ID} from '../reactor';
+
 export const STORAGE_ANTIMATTER_ID = 'storage-antimatter';
 
 export default function createStorageAntimatter(config: Config): StateMachine {
     const maxReleasedAntimatter = config.value(STORAGE_ANTIMATTER_ID, 'maxReleasedAntimatter');
+
+    const maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
+    const maxAntimatterInput = config.value(REACTOR_ID, 'maxAntimatterInput');
+    const energyToAntimatter = maxEnergyGeneration / maxAntimatterInput;
 
     return {
         id: STORAGE_ANTIMATTER_ID,
@@ -34,8 +40,9 @@ export default function createStorageAntimatter(config: Config): StateMachine {
                 },
             ];
         },
-        update(prevState, input) {
-            const releasedAntimatter = Math.min(prevState.releasedAntimatterPerTick, prevState.antimatter);
+        update(prevState, input, globals) {
+            const release = prevState.releasedAntimatterPerTick + (globals.camouflageEnergyRequired * energyToAntimatter);
+            const releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: (prevState.antimatter - releasedAntimatter) + input.unusedAntimatter,
                 releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
