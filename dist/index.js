@@ -1444,7 +1444,7 @@ var HOUR_TO_TICK$2 = 3600;
 function createCore$1(config) {
     var powerRequired = config.value(BASE_ID, 'powerRequired');
     var powerRequiredSilentRunning = config.value(BASE_ID, 'silentRunningPowerRequired');
-    var powerRequiredLockdown = config.value(BASE_ID, 'LockdownPowerRequired');
+    var powerRequiredLockdown = config.value(BASE_ID, 'lockdownPowerRequired');
     var drinkingWaterRequired = config.value(BASE_ID, 'drinkingWaterRequired') / HOUR_TO_TICK$2;
 
     return {

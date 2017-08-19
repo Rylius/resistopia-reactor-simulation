@@ -13,7 +13,7 @@ const HOUR_TO_TICK = 3600;
 export default function createCore(config: Config): StateMachine {
     const powerRequired = config.value(BASE_ID, 'powerRequired');
     const powerRequiredSilentRunning = config.value(BASE_ID, 'silentRunningPowerRequired');
-    const powerRequiredLockdown = config.value(BASE_ID, 'LockdownPowerRequired');
+    const powerRequiredLockdown = config.value(BASE_ID, 'lockdownPowerRequired');
     const drinkingWaterRequired = config.value(BASE_ID, 'drinkingWaterRequired') / HOUR_TO_TICK;
 
     return {
