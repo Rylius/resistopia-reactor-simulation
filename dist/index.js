@@ -1244,7 +1244,7 @@ function createCooling(config) {
         },
         input: function input(prevState) {
             return [{
-                stateMachine: POWER_DISTRIBUTOR_ID,
+                stateMachine: POWER_CAPACITOR_ID,
                 property: 'power',
                 max: prevState.powerRequired
             }, {
@@ -1402,7 +1402,7 @@ function createWaterTreatment(config) {
                 max: prevState.requiredWater,
                 priority: 50
             }, {
-                stateMachine: POWER_DISTRIBUTOR_ID,
+                stateMachine: POWER_CAPACITOR_ID,
                 property: 'power',
                 max: prevState.requiredPower
             }, {
@@ -1459,7 +1459,7 @@ function createCore$1(config) {
         },
         input: function input(prevState) {
             return [{
-                stateMachine: POWER_DISTRIBUTOR_ID,
+                stateMachine: POWER_CAPACITOR_ID,
                 property: 'power',
                 max: prevState.powerRequired
             }, {

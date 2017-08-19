@@ -3,7 +3,7 @@
 import type {StateMachine} from '../../src/program';
 import type {Config} from '../be13';
 
-import {POWER_DISTRIBUTOR_ID} from './power/distributor';
+import {POWER_CAPACITOR_ID} from './power/capacitor';
 import {WATER_TANK_ID} from '../water/tank';
 import {REACTOR_ID} from './reactor';
 
@@ -39,7 +39,7 @@ export default function createCooling(config: Config): StateMachine {
         input(prevState) {
             return [
                 {
-                    stateMachine: POWER_DISTRIBUTOR_ID,
+                    stateMachine: POWER_CAPACITOR_ID,
                     property: 'power',
                     max: prevState.powerRequired,
                 },

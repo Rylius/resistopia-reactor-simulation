@@ -6,7 +6,7 @@ import type {Config} from '../be13';
 import {clamp} from '../../src/util';
 
 import {WATER_TANK_ID} from './tank';
-import {POWER_DISTRIBUTOR_ID} from '../reactor/power/distributor';
+import {POWER_CAPACITOR_ID} from '../reactor/power/capacitor';
 
 export const WATER_TREATMENT_ID = 'water-treatment';
 
@@ -47,7 +47,7 @@ export default function createWaterTreatment(config: Config): StateMachine {
                     priority: 50,
                 },
                 {
-                    stateMachine: POWER_DISTRIBUTOR_ID,
+                    stateMachine: POWER_CAPACITOR_ID,
                     property: 'power',
                     max: prevState.requiredPower,
                 },
