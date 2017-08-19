@@ -56,9 +56,9 @@ export default function createCooling(config: Config): StateMachine {
                 },
             ];
         },
-        update(prevState, input) {
+        update(prevState, input, globals) {
             const cooling = clamp(prevState.cooling / maxCooling, 0, 1);
-            const active = cooling > 0;
+            const active = cooling > 0 && globals.disableReactorCooling <= 0;
 
             const powerRequired = maxPowerConsumption * cooling;
             const powerSatisfaction = active ? clamp(input.power / powerRequired, 0, 1) : 1;

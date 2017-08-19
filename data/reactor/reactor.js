@@ -123,8 +123,12 @@ export default function createReactor(config: Config): StateMachine {
 
                 state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
-                state.heat -= reactorCooling;
+                if (globals.disableReactorCooling <= 0) {
+                    state.heat -= reactorCooling;
+                }
             }
+
+            globals.disableReactorCooling = +(state.heat < minOptimalTemperature);
 
             return state;
         },

@@ -887,6 +887,8 @@ function createReactor(config) {
                 state.heat -= reactorCooling;
             }
 
+            globals.disableReactorCooling = +(state.heat < minOptimalTemperature);
+
             return state;
         }
     };
@@ -1252,9 +1254,9 @@ function createCooling(config) {
                 max: prevState.effectiveCooling
             }];
         },
-        update: function update(prevState, input) {
+        update: function update(prevState, input, globals) {
             var cooling = clamp(prevState.cooling / maxCooling, 0, 1);
-            var active = cooling > 0;
+            var active = cooling > 0 && globals.disableReactorCooling <= 0;
 
             var powerRequired = maxPowerConsumption * cooling;
             var powerSatisfaction = active ? clamp(input.power / powerRequired, 0, 1) : 1;
@@ -1490,7 +1492,8 @@ function createProgramBe13() {
             lockdown: 0,
             silentRunning: 0,
             camouflage: 1,
-            camouflageEnergyRequired: 0
+            camouflageEnergyRequired: 0,
+            disableReactorCooling: 0
         },
         stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
