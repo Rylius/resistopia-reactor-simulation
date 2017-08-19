@@ -12,7 +12,6 @@ export default function createStorageAntimatter(config: Config): StateMachine {
 
     const maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
     const maxAntimatterInput = config.value(REACTOR_ID, 'maxAntimatterInput');
-    const energyToAntimatter = maxEnergyGeneration / maxAntimatterInput;
 
     return {
         id: STORAGE_ANTIMATTER_ID,
@@ -41,7 +40,7 @@ export default function createStorageAntimatter(config: Config): StateMachine {
             ];
         },
         update(prevState, input, globals) {
-            const release = prevState.releasedAntimatterPerTick + (globals.camouflageEnergyRequired * energyToAntimatter);
+            const release = prevState.releasedAntimatterPerTick + (maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
             const releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: (prevState.antimatter - releasedAntimatter) + input.unusedAntimatter,

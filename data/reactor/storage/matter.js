@@ -12,7 +12,6 @@ export default function createStorageMatter(config: Config): StateMachine {
 
     const maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
     const maxMatterInput = config.value(REACTOR_ID, 'maxMatterInput');
-    const energyToMatter = maxEnergyGeneration / maxMatterInput;
 
     return {
         id: STORAGE_MATTER_ID,
@@ -41,7 +40,7 @@ export default function createStorageMatter(config: Config): StateMachine {
             ];
         },
         update(prevState, input, globals) {
-            const release = prevState.releasedMatterPerTick + (globals.camouflageEnergyRequired * energyToMatter);
+            const release = prevState.releasedMatterPerTick + (maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
             const releasedMatter = Math.min(release, prevState.matter);
             return {
                 matter: (prevState.matter - releasedMatter) + input.unusedMatter,

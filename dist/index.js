@@ -730,7 +730,7 @@ function configValue(config, stateMachineId, propertyName) {
     return value(config, 'config', stateMachineId, propertyName);
 }
 
-var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 270000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 576000 }, "core": { "nanites": 36000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
+var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 1080000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 576000 }, "core": { "nanites": 36000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
 var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 3000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "shutdownDuration": 10, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 1080000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 2419200 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 2 }, "core": { "minEnergyRequired": 120, "maxEnergyRequired": 180, "minEnergyChangeInterval": 7200, "maxEnergyChangeInterval": 14400, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
@@ -744,7 +744,6 @@ function createStorageAntimatter(config) {
 
     var maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
     var maxAntimatterInput = config.value(REACTOR_ID, 'maxAntimatterInput');
-    var energyToAntimatter = maxEnergyGeneration / maxAntimatterInput;
 
     return {
         id: STORAGE_ANTIMATTER_ID,
@@ -771,7 +770,7 @@ function createStorageAntimatter(config) {
             }];
         },
         update: function update(prevState, input, globals) {
-            var release = prevState.releasedAntimatterPerTick + globals.camouflageEnergyRequired * energyToAntimatter;
+            var release = prevState.releasedAntimatterPerTick + maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
             var releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: prevState.antimatter - releasedAntimatter + input.unusedAntimatter,
@@ -900,7 +899,6 @@ function createStorageMatter(config) {
 
     var maxEnergyGeneration = config.value(REACTOR_ID, 'maxEnergyGeneration');
     var maxMatterInput = config.value(REACTOR_ID, 'maxMatterInput');
-    var energyToMatter = maxEnergyGeneration / maxMatterInput;
 
     return {
         id: STORAGE_MATTER_ID,
@@ -927,7 +925,7 @@ function createStorageMatter(config) {
             }];
         },
         update: function update(prevState, input, globals) {
-            var release = prevState.releasedMatterPerTick + globals.camouflageEnergyRequired * energyToMatter;
+            var release = prevState.releasedMatterPerTick + maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
             var releasedMatter = Math.min(release, prevState.matter);
             return {
                 matter: prevState.matter - releasedMatter + input.unusedMatter,
