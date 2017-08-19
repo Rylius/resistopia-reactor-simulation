@@ -75,7 +75,7 @@
         },
         "energy-converter": {
             "maxConversion": 100,
-            "energyToPowerFactor": 1
+            "energyToPowerFactor": 2
         },
         "energy-capacitor": {
             "capacity": 1080000
@@ -105,7 +105,9 @@
             "nanitesCapacity": 65500
         },
         "base": {
-            "powerRequired": 60,
+            "powerRequired": 150,
+            "silentRunningPowerRequired": 70,
+            "lockdownPowerRequired": 10,
             "drinkingWaterRequired": 1000
         },
         "pump-a": {

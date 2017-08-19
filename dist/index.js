@@ -731,7 +731,7 @@ function configValue(config, stateMachineId, propertyName) {
 }
 
 var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 1080000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 2419200 }, "core": { "nanites": 36000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 3000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "shutdownDuration": 10, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 1 }, "energy-capacitor": { "capacity": 1080000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 2419200 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 1 }, "core": { "minEnergyRequired": 120, "maxEnergyRequired": 180, "minEnergyChangeInterval": 7200, "maxEnergyChangeInterval": 14400, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 60, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 3000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "shutdownDuration": 10, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 2 }, "energy-capacitor": { "capacity": 1080000 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 2419200 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 1 }, "core": { "minEnergyRequired": 120, "maxEnergyRequired": 180, "minEnergyChangeInterval": 7200, "maxEnergyChangeInterval": 14400, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 150, "silentRunningPowerRequired": 70, "lockdownPowerRequired": 10, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1443,6 +1443,8 @@ var HOUR_TO_TICK$2 = 3600;
 
 function createCore$1(config) {
     var powerRequired = config.value(BASE_ID, 'powerRequired');
+    var powerRequiredSilentRunning = config.value(BASE_ID, 'silentRunningPowerRequired');
+    var powerRequiredLockdown = config.value(BASE_ID, 'LockdownPowerRequired');
     var drinkingWaterRequired = config.value(BASE_ID, 'drinkingWaterRequired') / HOUR_TO_TICK$2;
 
     return {
@@ -1466,10 +1468,11 @@ function createCore$1(config) {
                 max: prevState.drinkingWaterRequired
             }];
         },
-        update: function update(prevState, input) {
+        update: function update(prevState, input, globals) {
+            var requiredPower = globals.lockdown ? powerRequiredLockdown : globals.silentRunning ? powerRequiredSilentRunning : powerRequired;
             return {
-                powerRequired: prevState.powerRequired,
-                powerSatisfaction: input.power / prevState.powerRequired,
+                powerRequired: requiredPower,
+                powerSatisfaction: input.power / requiredPower,
                 drinkingWaterRequired: prevState.drinkingWaterRequired,
                 drinkingWaterSatisfaction: input.drinkingWater / prevState.drinkingWaterRequired
             };
