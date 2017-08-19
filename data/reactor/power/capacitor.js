@@ -18,6 +18,7 @@ export default function createPowerCapacitor(config: Config): StateMachine {
             return {
                 capacity: capacity,
                 power: initialPower,
+                difference: 0,
             }
         },
         input(prevState) {
@@ -39,6 +40,7 @@ export default function createPowerCapacitor(config: Config): StateMachine {
             return {
                 capacity: prevState.capacity,
                 power: input.storedPower + input.power,
+                difference: (input.storedPower + input.power) - prevState.power,
             };
         },
     };

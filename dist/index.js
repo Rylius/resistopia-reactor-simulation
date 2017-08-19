@@ -1091,7 +1091,8 @@ function createPowerCapacitor(config) {
         initialState: function initialState() {
             return {
                 capacity: capacity,
-                power: initialPower
+                power: initialPower,
+                difference: 0
             };
         },
         input: function input(prevState) {
@@ -1109,7 +1110,8 @@ function createPowerCapacitor(config) {
         update: function update(prevState, input) {
             return {
                 capacity: prevState.capacity,
-                power: input.storedPower + input.power
+                power: input.storedPower + input.power,
+                difference: input.storedPower + input.power - prevState.power
             };
         }
     };
