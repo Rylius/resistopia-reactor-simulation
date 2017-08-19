@@ -35,6 +35,8 @@ export default function createProgramBe13(): Program {
         globals: {
             effects: 1, // Sound/light, not really used in the simulation itself
             lockdown: 0,
+            silentRunning: 0,
+            camouflage: 1,
         },
         stateMachines: [
             createStorageMatter(config), createStorageAntimatter(config),
