@@ -834,11 +834,11 @@ function createReactor(config) {
             }, {
                 stateMachine: REACTOR_ID,
                 property: 'energy',
-                priority: -100
+                priority: -1000
             }, {
                 stateMachine: REACTOR_ID,
                 property: 'heat',
-                priority: -100
+                priority: -1000
             }];
         },
         update: function update(prevState, input, globals) {
@@ -1098,7 +1098,7 @@ function createPowerCapacitor(config) {
             return [{
                 stateMachine: POWER_DISTRIBUTOR_ID,
                 property: 'power',
-                max: prevState.charge ? prevState.capacity - prevState.power : 0
+                max: prevState.capacity - prevState.power
             }, {
                 stateMachine: POWER_CAPACITOR_ID,
                 property: 'power',

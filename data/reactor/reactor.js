@@ -64,12 +64,12 @@ export default function createReactor(config: Config): StateMachine {
                 {
                     stateMachine: REACTOR_ID,
                     property: 'energy',
-                    priority: -100,
+                    priority: -1000,
                 },
                 {
                     stateMachine: REACTOR_ID,
                     property: 'heat',
-                    priority: -100,
+                    priority: -1000,
                 },
             ];
         },

@@ -25,7 +25,7 @@ export default function createPowerCapacitor(config: Config): StateMachine {
                 {
                     stateMachine: POWER_DISTRIBUTOR_ID,
                     property: 'power',
-                    max: prevState.charge ? (prevState.capacity - prevState.power) : 0,
+                    max: prevState.capacity - prevState.power,
                 },
                 {
                     stateMachine: POWER_CAPACITOR_ID,
