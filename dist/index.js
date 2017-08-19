@@ -1451,7 +1451,7 @@ function createCore(config) {
 
             if (disabled) {
                 energyRequired = 0;
-            } else if (nextEnergyChange) {
+            } else if (nextEnergyChange <= 0) {
                 energyRequired = updateEnergyRequired();
                 nextEnergyChange = updateNextEnergyChange();
             }
@@ -1470,7 +1470,7 @@ function createCore(config) {
                 energyFromDistributor: input.energy,
                 energyFromCapacitor: input.capacitorEnergy,
                 energyMissing: Math.max(prevState.energyRequired - energy, 0),
-                energySatisfaction: energy / prevState.energyRequired
+                energySatisfaction: disabled ? 1 : energy / prevState.energyRequired
             };
         }
     };

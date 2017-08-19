@@ -73,7 +73,7 @@ export default function createReactor(config: Config): StateMachine {
                 },
             ];
         },
-        update(prevState, input) {
+        update(prevState, input, globals) {
             const state = {
                 storedMatter: prevState.storedMatter + input.matter,
                 storedAntimatter: prevState.storedAntimatter + input.antimatter,
