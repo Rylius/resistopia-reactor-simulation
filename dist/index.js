@@ -659,7 +659,7 @@ var prototype = function () {
                 stateMachine: energyCapacitor.id,
                 property: 'energy',
                 as: 'capacitorEnergy',
-                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
+                max: Math.max(prevState.energyRequired - prevState.energyFromReactor, 0)
             }];
         },
         update: function update(prevState, input) {
@@ -1305,7 +1305,7 @@ function createCore(config) {
                 nanites: initialNanites,
                 nanitesCapacity: nanitesCapacity,
                 energyConsumed: 0,
-                energyFromDistributor: 0,
+                energyFromReactor: 0,
                 energyFromCapacitor: 0,
                 energyMissing: 0,
                 energySatisfaction: 0
@@ -1321,7 +1321,7 @@ function createCore(config) {
                 stateMachine: ENERGY_CAPACITOR_ID,
                 property: 'energy',
                 as: 'capacitorEnergy',
-                max: Math.max(prevState.energyRequired - prevState.energyFromDistributor, 0)
+                max: Math.max(prevState.energyRequired - prevState.energyFromReactor, 0)
             }];
         },
         update: function update(prevState, input, globals) {
@@ -1348,7 +1348,7 @@ function createCore(config) {
                 nanites: clamp(prevState.nanites + (globals.camouflage ? nanitesRegeneration : -nanitesConsumption), 0, prevState.nanitesCapacity),
                 nanitesCapacity: prevState.nanitesCapacity,
                 energyConsumed: energy,
-                energyFromDistributor: input.energy,
+                energyFromReactor: input.energy,
                 energyFromCapacitor: input.capacitorEnergy,
                 energyMissing: Math.max(prevState.energyRequired - energy, 0),
                 energySatisfaction: disabled ? 1 : energy / prevState.energyRequired
