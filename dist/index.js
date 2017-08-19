@@ -884,7 +884,9 @@ function createReactor(config) {
 
                 state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
-                state.heat -= reactorCooling;
+                if (globals.disableReactorCooling <= 0) {
+                    state.heat -= reactorCooling;
+                }
             }
 
             globals.disableReactorCooling = +(state.heat < minOptimalTemperature);
