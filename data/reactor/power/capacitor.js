@@ -9,6 +9,7 @@ export const POWER_CAPACITOR_ID = 'power-capacitor';
 
 export default function createPowerCapacitor(config: Config): StateMachine {
     const capacity = config.value(POWER_CAPACITOR_ID, 'capacity');
+    const generatorThreshold = config.value(POWER_CAPACITOR_ID, 'generatorThreshold');
     const initialPower = config.initial(POWER_CAPACITOR_ID, 'power');
 
     return {
@@ -36,11 +37,14 @@ export default function createPowerCapacitor(config: Config): StateMachine {
                 },
             ];
         },
-        update(prevState, input) {
+        update(prevState, input, globals) {
+            const generatorThresholdValue = prevState.capacity * generatorThreshold;
+            const power = input.storedPower + input.power;
+            globals.generatorRunning = +(power <= generatorThresholdValue);
             return {
                 capacity: prevState.capacity,
-                power: input.storedPower + input.power,
-                difference: (input.storedPower + input.power) - prevState.power,
+                power: Math.max(power, generatorThresholdValue),
+                difference: power - prevState.power,
             };
         },
     };

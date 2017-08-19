@@ -88,7 +88,8 @@
             "shutdownDuration": 10
         },
         "power-capacitor": {
-            "capacity": 360000
+            "capacity": 360000,
+            "generatorThreshold": 0.25
         },
         "reactor-cooling": {
             "maxPowerConsumption": 10,
