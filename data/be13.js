@@ -42,7 +42,7 @@ export default function createProgramBe13(): Program {
         stateMachines: [
             createStorageMatter(config), createStorageAntimatter(config),
             createReactor(config),
-            createEnergyDistributor(config), createEnergyCapacitor(config), createEnergyConverter(config),
+            createEnergyCapacitor(config), createEnergyConverter(config),
             createPowerDistributor(config), createPowerCapacitor(config),
             createCooling(config),
             createCore(config),

@@ -3,7 +3,7 @@
 import type {StateMachine} from '../../../src/program';
 import type {Config} from '../../be13';
 
-import {ENERGY_DISTRIBUTOR_ID} from './distributor';
+import {REACTOR_ID} from '../reactor';
 
 export const ENERGY_CONVERTER_ID = 'energy-converter';
 
@@ -31,10 +31,10 @@ export default function createEnergyConverter(config: Config): StateMachine {
         input(prevState) {
             return [
                 {
-                    stateMachine: ENERGY_DISTRIBUTOR_ID,
-                    property: 'converterEnergy',
-                    as: 'energy',
+                    stateMachine: REACTOR_ID,
+                    property: 'energy',
                     max: prevState.energyConversion,
+                    priority: 0,
                 },
             ];
         },

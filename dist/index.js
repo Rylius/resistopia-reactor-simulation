@@ -938,116 +938,6 @@ function createStorageMatter(config) {
     };
 }
 
-var ENERGY_DISTRIBUTOR_ID = 'energy-distributor';
-
-function createEnergyDistributor(config) {
-    var outputBuffer = config.value(ENERGY_DISTRIBUTOR_ID, 'outputBuffer');
-
-    var initialConverterWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'converterWeight');
-    var initialCapacitorWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'capacitorWeight');
-    var initialCoreWeight = config.initial(ENERGY_DISTRIBUTOR_ID, 'coreWeight');
-
-    return {
-        id: ENERGY_DISTRIBUTOR_ID,
-        public: {
-            converterWeight: {
-                min: 0,
-                max: 1
-            },
-            capacitorWeight: {
-                min: 0,
-                max: 1
-            },
-            coreWeight: {
-                min: 0,
-                max: 1
-            }
-        },
-        output: ['converterEnergy', 'capacitorEnergy', 'coreEnergy'],
-        initialState: function initialState() {
-            return {
-                unusedEnergy: 0,
-                converterEnergy: 0,
-                capacitorEnergy: 0,
-                coreEnergy: 0,
-                converterWeight: initialConverterWeight,
-                capacitorWeight: initialCapacitorWeight,
-                coreWeight: initialCoreWeight
-            };
-        },
-        input: function input(prevState) {
-            var maxInput = outputBuffer * 3 - prevState.unusedEnergy;
-            return [{
-                stateMachine: REACTOR_ID,
-                property: 'energy',
-                max: maxInput
-            }, {
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'converterEnergy',
-                priority: -100
-            }, {
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'capacitorEnergy',
-                priority: -100
-            }, {
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'coreEnergy',
-                priority: -100
-            }];
-        },
-        update: function update(prevState, input) {
-            var converterBuffer = input.converterEnergy;
-            var capacitorBuffer = input.capacitorEnergy;
-            var coreBuffer = input.coreEnergy;
-
-            var energy = prevState.unusedEnergy + input.energy;
-
-            var iterations = 0;
-            while (energy > 0 && iterations < 10) {
-                iterations++;
-
-                var converterBufferFull = converterBuffer >= outputBuffer;
-                var capacitorBufferFull = capacitorBuffer >= outputBuffer;
-                var coreBufferFull = coreBuffer >= outputBuffer;
-                if (converterBufferFull && capacitorBufferFull && coreBufferFull) {
-                    break;
-                }
-
-                var weightTotal = (converterBufferFull ? 0 : prevState.converterWeight) + (capacitorBufferFull ? 0 : prevState.capacitorWeight) + (coreBufferFull ? 0 : prevState.coreWeight);
-                if (weightTotal <= 0) {
-                    break;
-                }
-
-                if (!coreBufferFull && prevState.coreWeight > 0) {
-                    var addedEnergy = Math.min(outputBuffer - coreBuffer, Math.max(energy * (prevState.coreWeight / weightTotal), 1), energy);
-                    coreBuffer += addedEnergy;
-                    energy -= addedEnergy;
-                }
-                if (!converterBufferFull && prevState.converterWeight > 0) {
-                    var _addedEnergy = Math.min(outputBuffer - converterBuffer, Math.max(energy * (prevState.converterWeight / weightTotal), 1), energy);
-                    converterBuffer += _addedEnergy;
-                    energy -= _addedEnergy;
-                }
-                if (!capacitorBufferFull && prevState.capacitorWeight > 0) {
-                    var _addedEnergy2 = Math.min(outputBuffer - capacitorBuffer, Math.max(energy * (prevState.capacitorWeight / weightTotal), 1), energy);
-                    capacitorBuffer += _addedEnergy2;
-                    energy -= _addedEnergy2;
-                }
-            }
-
-            return {
-                unusedEnergy: energy,
-                converterEnergy: converterBuffer,
-                capacitorEnergy: capacitorBuffer,
-                coreEnergy: coreBuffer,
-                converterWeight: prevState.converterWeight,
-                capacitorWeight: prevState.capacitorWeight,
-                coreWeight: prevState.coreWeight
-            };
-        }
-    };
-}
-
 var ENERGY_CONVERTER_ID = 'energy-converter';
 
 function createEnergyConverter(config) {
@@ -1073,10 +963,10 @@ function createEnergyConverter(config) {
         },
         input: function input(prevState) {
             return [{
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'converterEnergy',
-                as: 'energy',
-                max: prevState.energyConversion
+                stateMachine: REACTOR_ID,
+                property: 'energy',
+                max: prevState.energyConversion,
+                priority: 0
             }];
         },
         update: function update(prevState, input) {
@@ -1106,10 +996,10 @@ function createEnergyCapacitor(config) {
         },
         input: function input(prevState) {
             return [{
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'capacitorEnergy',
-                as: 'energy',
-                max: prevState.capacity - prevState.energy
+                stateMachine: REACTOR_ID,
+                property: 'energy',
+                max: prevState.capacity - prevState.energy,
+                priority: -100
             }, {
                 stateMachine: ENERGY_CAPACITOR_ID,
                 property: 'energy',
@@ -1433,10 +1323,10 @@ function createCore(config) {
         },
         input: function input(prevState) {
             return [{
-                stateMachine: ENERGY_DISTRIBUTOR_ID,
-                property: 'coreEnergy',
-                as: 'energy',
-                max: prevState.energyRequired
+                stateMachine: REACTOR_ID,
+                property: 'energy',
+                max: prevState.energyRequired,
+                priority: 100
             }, {
                 stateMachine: ENERGY_CAPACITOR_ID,
                 property: 'energy',
@@ -1610,7 +1500,7 @@ function createProgramBe13() {
             camouflage: 1,
             camouflageEnergyRequired: 0
         },
-        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
+        stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
 }
 

@@ -5,7 +5,7 @@ import type {Config} from '../be13';
 
 import {clamp, randomInRange} from '../../src/util';
 
-import {ENERGY_DISTRIBUTOR_ID} from './energy/distributor';
+import {REACTOR_ID} from './reactor';
 import {ENERGY_CAPACITOR_ID} from './energy/capacitor';
 
 export const CORE_ID = 'core';
@@ -47,10 +47,10 @@ export default function createCore(config: Config): StateMachine {
         input(prevState) {
             return [
                 {
-                    stateMachine: ENERGY_DISTRIBUTOR_ID,
-                    property: 'coreEnergy',
-                    as: 'energy',
+                    stateMachine: REACTOR_ID,
+                    property: 'energy',
                     max: prevState.energyRequired,
+                    priority: 100,
                 },
                 {
                     stateMachine: ENERGY_CAPACITOR_ID,

@@ -3,7 +3,7 @@
 import type {StateMachine} from '../../../src/program';
 import type {Config} from '../../be13';
 
-import {ENERGY_DISTRIBUTOR_ID} from './distributor';
+import {REACTOR_ID} from '../reactor';
 
 export const ENERGY_CAPACITOR_ID = 'energy-capacitor';
 
@@ -23,10 +23,10 @@ export default function createEnergyCapacitor(config: Config): StateMachine {
         input(prevState) {
             return [
                 {
-                    stateMachine: ENERGY_DISTRIBUTOR_ID,
-                    property: 'capacitorEnergy',
-                    as: 'energy',
+                    stateMachine: REACTOR_ID,
+                    property: 'energy',
                     max: prevState.capacity - prevState.energy,
+                    priority: -100,
                 },
                 {
                     stateMachine: ENERGY_CAPACITOR_ID,
