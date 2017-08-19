@@ -63,7 +63,7 @@
             "minOperatingTemperature": 100,
             "minOptimalTemperature": 1000,
             "maxOptimalTemperature": 2000,
-            "maxOperatingTemperature": 5000,
+            "maxOperatingTemperature": 3000,
             "maxEnergyGeneration": 300,
             "maxHeatGeneration": 2,
             "energyToHeatFactor": 0.02,
@@ -78,7 +78,7 @@
             "energyToPowerFactor": 1
         },
         "energy-capacitor": {
-            "capacity": 270000
+            "capacity": 1080000
         },
         "power-distributor": {
             "minTemperature": 30,
@@ -88,7 +88,7 @@
             "shutdownDuration": 10
         },
         "power-capacitor": {
-            "capacity": 576000
+            "capacity": 2419200
         },
         "reactor-cooling": {
             "maxPowerConsumption": 10,
