@@ -27,7 +27,7 @@ export function createInitialState(program: Program): State {
     const state: State = {
         tick: 0,
         time: Date.now(),
-        globals: {},
+        globals: program.globals,
         stateMachines: {},
     };
 

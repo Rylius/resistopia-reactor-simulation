@@ -9,7 +9,7 @@ function createInitialState(program) {
     var state = {
         tick: 0,
         time: Date.now(),
-        globals: {},
+        globals: program.globals,
         stateMachines: {}
     };
 
