@@ -1446,6 +1446,8 @@ function createCore(config) {
                 nextEnergyChange = updateNextEnergyChange();
             }
 
+            globals.camouflageEnergyRequired = energyRequired;
+
             // It's possible we drew too much energy in one tick, so discard any excess
             var energy = Math.min(input.energy + input.capacitorEnergy, energyRequired);
 
@@ -1594,7 +1596,8 @@ function createProgramBe13() {
             effects: 1, // Sound/light, not really used in the simulation itself
             lockdown: 0,
             silentRunning: 0,
-            camouflage: 1
+            camouflage: 1,
+            camouflageEnergyRequired: 0
         },
         stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyDistributor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };

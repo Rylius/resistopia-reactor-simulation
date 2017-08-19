@@ -37,6 +37,7 @@ export default function createProgramBe13(): Program {
             lockdown: 0,
             silentRunning: 0,
             camouflage: 1,
+            camouflageEnergyRequired: 0,
         },
         stateMachines: [
             createStorageMatter(config), createStorageAntimatter(config),

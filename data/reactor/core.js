@@ -73,6 +73,8 @@ export default function createCore(config: Config): StateMachine {
                 nextEnergyChange = updateNextEnergyChange();
             }
 
+            globals.camouflageEnergyRequired = energyRequired;
+
             // It's possible we drew too much energy in one tick, so discard any excess
             const energy = Math.min(input.energy + input.capacitorEnergy, energyRequired);
 
