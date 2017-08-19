@@ -96,8 +96,10 @@
             "maxCooling": 2
         },
         "core": {
-            "energyRequired": 150,
-            "powerCycleDuration": 120,
+            "minEnergyRequired": 120,
+            "maxEnergyRequired": 180,
+            "minEnergyChangeInterval": 7200,
+            "maxEnergyChangeInterval": 14400,
             "nanitesConsumption": 1,
             "nanitesRegeneration": 3,
             "nanitesCapacity": 65500

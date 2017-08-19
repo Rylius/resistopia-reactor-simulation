@@ -5,3 +5,7 @@ export function normalizeRange(value, min, max) {
 export function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
 }
+
+export function randomInRange(min, max) {
+    return Math.random() * (max - min) + min;
+}
