@@ -123,7 +123,7 @@ export default function createReactor(config: Config): StateMachine {
 
                 state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
-                state.heat -= reactorCooling * productivity;
+                state.heat -= reactorCooling;
             }
 
             return state;

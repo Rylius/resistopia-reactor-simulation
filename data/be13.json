@@ -93,7 +93,7 @@
         "reactor-cooling": {
             "maxPowerConsumption": 10,
             "maxWaterConsumption": 3000,
-            "maxCooling": 1.5
+            "maxCooling": 1
         },
         "core": {
             "minEnergyRequired": 120,
