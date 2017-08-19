@@ -19,7 +19,7 @@
             "energyConversion": 100
         },
         "power-capacitor": {
-            "power": 2419200
+            "power": 360000
         },
         "core": {
             "nanites": 36000
@@ -88,7 +88,7 @@
             "shutdownDuration": 10
         },
         "power-capacitor": {
-            "capacity": 2419200
+            "capacity": 360000
         },
         "reactor-cooling": {
             "maxPowerConsumption": 10,
