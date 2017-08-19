@@ -26,7 +26,7 @@ export default function createCore(config: Config): StateMachine {
     }
 
     function updateNextEnergyChange() {
-        return randomInRange(minEnergyChangeInterval, maxEnergyChangeInterval);
+        return Math.floor(randomInRange(minEnergyChangeInterval, maxEnergyChangeInterval));
     }
 
     return {

@@ -849,7 +849,7 @@ function createReactor(config) {
                 shutdownRemaining: Math.max(prevState.shutdownRemaining - 1, 0),
                 energy: 0,
                 energyWasted: input.energy,
-                heat: Math.max(input.heat + input.energy * energyToHeat - reactorCooling, minTemperature)
+                heat: Math.max(input.heat + input.energy * energyToHeat, minTemperature)
             };
 
             // Force full shutdown duration as long as reactor heat is above the threshold
@@ -885,6 +885,7 @@ function createReactor(config) {
 
                 state.energy += energyGeneration * productivity * heatEfficiency;
                 state.heat += heatGeneration * productivity;
+                state.heat -= reactorCooling * productivity;
             }
 
             return state;
@@ -1412,7 +1413,7 @@ function createCore(config) {
     }
 
     function updateNextEnergyChange() {
-        return randomInRange(minEnergyChangeInterval, maxEnergyChangeInterval);
+        return Math.floor(randomInRange(minEnergyChangeInterval, maxEnergyChangeInterval));
     }
 
     return {
