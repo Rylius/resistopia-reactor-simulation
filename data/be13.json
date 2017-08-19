@@ -19,7 +19,7 @@
             "energyConversion": 100
         },
         "power-capacitor": {
-            "power": 576000
+            "power": 2419200
         },
         "core": {
             "nanites": 36000

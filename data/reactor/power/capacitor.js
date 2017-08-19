@@ -13,12 +13,6 @@ export default function createPowerCapacitor(config: Config): StateMachine {
 
     return {
         id: POWER_CAPACITOR_ID,
-        public: {
-            charge: {
-                min: 0,
-                max: 1,
-            },
-        },
         output: ['power'],
         initialState() {
             return {
