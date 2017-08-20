@@ -38,6 +38,7 @@ export default function createProgramBe13(): Program {
             silentRunning: 0,
             camouflage: 1,
             camouflageEnergyRequired: 0,
+            storedEnergy: 0,
             disableReactorCooling: 0,
             generatorRunning: 0,
             resetMatterInput: 0,

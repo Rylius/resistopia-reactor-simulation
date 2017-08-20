@@ -21,6 +21,8 @@ export default function createCore(config: Config): StateMachine {
 
     const initialNanites = config.initial(CORE_ID, 'nanites');
 
+    const capacitorTrickleCharge = config.value(ENERGY_CAPACITOR_ID, 'trickleCharge');
+
     function updateEnergyRequired() {
         return randomInRange(minEnergyRequired, maxEnergyRequired);
     }
@@ -75,7 +77,7 @@ export default function createCore(config: Config): StateMachine {
                 globals.resetAntimatterInput = 1;
             }
 
-            globals.camouflageEnergyRequired = energyRequired;
+            globals.camouflageEnergyRequired = energyRequired + (globals.storedEnergy < 1 ? capacitorTrickleCharge : 0);
 
             // It's possible we drew too much energy in one tick, so discard any excess
             const energy = Math.min(input.energy + input.capacitorEnergy, energyRequired);
