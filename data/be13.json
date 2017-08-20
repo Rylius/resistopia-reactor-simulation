@@ -76,7 +76,7 @@
         },
         "energy-converter": {
             "maxConversion": 100,
-            "energyToPowerFactor": 2
+            "energyToPowerFactor": 2.5
         },
         "energy-capacitor": {
             "capacity": 1080000,
