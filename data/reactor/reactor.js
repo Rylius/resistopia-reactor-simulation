@@ -3,7 +3,7 @@
 import type {StateMachine} from '../../src/program';
 import type {Config} from '../be13';
 
-import {clamp, normalizeRange} from '../../src/util';
+import {clamp, normalizeRange, randomInRange} from '../../src/util';
 
 import {STORAGE_MATTER_ID} from './storage/matter';
 import {STORAGE_ANTIMATTER_ID} from './storage/antimatter';
@@ -25,7 +25,8 @@ export default function createReactor(config: Config): StateMachine {
 
     const energyToHeat = config.value(REACTOR_ID, 'energyToHeatFactor');
 
-    const shutdownDuration = config.value(REACTOR_ID, 'shutdownDuration');
+    const minShutdownDuration = config.value(REACTOR_ID, 'minShutdownDuration');
+    const maxShutdownDuration = config.value(REACTOR_ID, 'maxShutdownDuration');
 
     const reactorCooling = config.value(REACTOR_ID, 'cooling');
 
@@ -85,7 +86,10 @@ export default function createReactor(config: Config): StateMachine {
 
             // Force full shutdown duration as long as reactor heat is above the threshold
             if (state.heat > maxOperatingTemperature) {
-                state.shutdownRemaining = shutdownDuration;
+                state.shutdownRemaining = Math.floor(randomInRange(minShutdownDuration, maxShutdownDuration));
+
+                globals.resetMatterInput = 1;
+                globals.resetAntimatterInput = 1;
             }
 
             const running = state.shutdownRemaining <= 0;

@@ -67,7 +67,8 @@
             "maxEnergyGeneration": 300,
             "maxHeatGeneration": 2,
             "energyToHeatFactor": 0.02,
-            "shutdownDuration": 10,
+            "minShutdownDuration": 600,
+            "maxShutdownDuration": 1200,
             "cooling": 0.5
         },
         "energy-distributor": {
