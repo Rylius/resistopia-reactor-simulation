@@ -1156,7 +1156,7 @@ var HOUR_TO_TICK$1 = 3600;
 
 function createPump(config, id) {
     var maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK$1;
-    var powerConsumption = config.value(id, 'powerConsumption') / HOUR_TO_TICK$1;
+    var powerConsumption = config.value(id, 'powerConsumption');
 
     var initiallyEnabled = config.initial(id, 'enabled');
     var filterHealth = config.initial(id, 'filterHealth');

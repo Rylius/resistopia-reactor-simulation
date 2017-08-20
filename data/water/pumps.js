@@ -13,7 +13,7 @@ const HOUR_TO_TICK = 3600;
 
 function createPump(config: Config, id: string): StateMachine {
     const maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK;
-    const powerConsumption = config.value(id, 'powerConsumption') / HOUR_TO_TICK;
+    const powerConsumption = config.value(id, 'powerConsumption');
 
     const initiallyEnabled = config.initial(id, 'enabled');
     const filterHealth = config.initial(id, 'filterHealth');
