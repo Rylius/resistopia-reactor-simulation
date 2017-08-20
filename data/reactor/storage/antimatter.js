@@ -40,11 +40,17 @@ export default function createStorageAntimatter(config: Config): StateMachine {
             ];
         },
         update(prevState, input, globals) {
-            const release = prevState.releasedAntimatterPerTick + (maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
+            let prevReleasedAntimatter = prevState.releasedAntimatterPerTick;
+            if (globals.resetAntimatterInput > 0) {
+                prevReleasedAntimatter = 0;
+                globals.resetAntimatterInput = 0;
+            }
+
+            const release = prevReleasedAntimatter + (maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
             const releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: (prevState.antimatter - releasedAntimatter) + input.unusedAntimatter,
-                releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
+                releasedAntimatterPerTick: prevReleasedAntimatter,
                 releasedAntimatter,
             };
         },

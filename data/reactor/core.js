@@ -71,6 +71,8 @@ export default function createCore(config: Config): StateMachine {
             } else if (nextEnergyChange <= 0) {
                 energyRequired = updateEnergyRequired();
                 nextEnergyChange = updateNextEnergyChange();
+                globals.resetMatterInput = 1;
+                globals.resetAntimatterInput = 1;
             }
 
             globals.camouflageEnergyRequired = energyRequired;

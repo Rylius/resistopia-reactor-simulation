@@ -40,11 +40,17 @@ export default function createStorageMatter(config: Config): StateMachine {
             ];
         },
         update(prevState, input, globals) {
-            const release = prevState.releasedMatterPerTick + (maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
+            let prevReleasedMatter = prevState.releasedMatterPerTick;
+            if (globals.resetMatterInput > 0) {
+                prevReleasedMatter = 0;
+                globals.resetMatterInput = 0;
+            }
+
+            const release = prevReleasedMatter + (maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration));
             const releasedMatter = Math.min(release, prevState.matter);
             return {
                 matter: (prevState.matter - releasedMatter) + input.unusedMatter,
-                releasedMatterPerTick: prevState.releasedMatterPerTick,
+                releasedMatterPerTick: prevReleasedMatter,
                 releasedMatter,
             };
         },

@@ -770,11 +770,17 @@ function createStorageAntimatter(config) {
             }];
         },
         update: function update(prevState, input, globals) {
-            var release = prevState.releasedAntimatterPerTick + maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
+            var prevReleasedAntimatter = prevState.releasedAntimatterPerTick;
+            if (globals.resetAntimatterInput > 0) {
+                prevReleasedAntimatter = 0;
+                globals.resetAntimatterInput = 0;
+            }
+
+            var release = prevReleasedAntimatter + maxAntimatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
             var releasedAntimatter = Math.min(release, prevState.antimatter);
             return {
                 antimatter: prevState.antimatter - releasedAntimatter + input.unusedAntimatter,
-                releasedAntimatterPerTick: prevState.releasedAntimatterPerTick,
+                releasedAntimatterPerTick: prevReleasedAntimatter,
                 releasedAntimatter: releasedAntimatter
             };
         }
@@ -929,11 +935,17 @@ function createStorageMatter(config) {
             }];
         },
         update: function update(prevState, input, globals) {
-            var release = prevState.releasedMatterPerTick + maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
+            var prevReleasedMatter = prevState.releasedMatterPerTick;
+            if (globals.resetMatterInput > 0) {
+                prevReleasedMatter = 0;
+                globals.resetMatterInput = 0;
+            }
+
+            var release = prevReleasedMatter + maxMatterInput * (globals.camouflageEnergyRequired / maxEnergyGeneration);
             var releasedMatter = Math.min(release, prevState.matter);
             return {
                 matter: prevState.matter - releasedMatter + input.unusedMatter,
-                releasedMatterPerTick: prevState.releasedMatterPerTick,
+                releasedMatterPerTick: prevReleasedMatter,
                 releasedMatter: releasedMatter
             };
         }
@@ -1345,6 +1357,8 @@ function createCore(config) {
             } else if (nextEnergyChange <= 0) {
                 energyRequired = updateEnergyRequired();
                 nextEnergyChange = updateNextEnergyChange();
+                globals.resetMatterInput = 1;
+                globals.resetAntimatterInput = 1;
             }
 
             globals.camouflageEnergyRequired = energyRequired;
@@ -1503,7 +1517,9 @@ function createProgramBe13() {
             camouflage: 1,
             camouflageEnergyRequired: 0,
             disableReactorCooling: 0,
-            generatorRunning: 0
+            generatorRunning: 0,
+            resetMatterInput: 0,
+            resetAntimatterInput: 0
         },
         stateMachines: [createStorageMatter(config$$1), createStorageAntimatter(config$$1), createReactor(config$$1), createEnergyCapacitor(config$$1), createEnergyConverter(config$$1), createPowerDistributor(config$$1), createPowerCapacitor(config$$1), createCooling(config$$1), createCore(config$$1), createCore$1(config$$1)].concat(toConsumableArray(createPumps(config$$1)), [createWaterTank(config$$1), createWaterTreatment(config$$1)])
     };
