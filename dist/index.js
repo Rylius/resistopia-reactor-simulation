@@ -1186,7 +1186,7 @@ function createPump(config, id) {
             return [{
                 stateMachine: POWER_CAPACITOR_ID,
                 property: 'power',
-                max: powerConsumption
+                max: prevState.powerRequired
             }];
         },
         update: function update(prevState, input) {
