@@ -114,13 +114,16 @@
             "drinkingWaterRequired": 1000
         },
         "pump-a": {
-            "maxProduction": 3200
+            "maxProduction": 3200,
+            "powerConsumption": 10
         },
         "pump-b": {
-            "maxProduction": 1900
+            "maxProduction": 1900,
+            "powerConsumption": 6
         },
         "pump-c": {
-            "maxProduction": 1200
+            "maxProduction": 1200,
+            "powerConsumption": 4
         },
         "water-tank": {
             "capacity": 35000

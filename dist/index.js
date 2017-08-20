@@ -731,7 +731,7 @@ function configValue(config, stateMachineId, propertyName) {
 }
 
 var initial$2 = { "storage-matter": { "matter": 432000000 }, "storage-antimatter": { "antimatter": 432000000 }, "reactor": {}, "energy-distributor": { "converterWeight": 1, "capacitorWeight": 0.5, "coreWeight": 1 }, "energy-capacitor": { "energy": 1080000 }, "energy-converter": { "energyConversion": 100 }, "power-capacitor": { "power": 360000 }, "core": { "nanites": 36000 }, "pump-a": { "enabled": 1, "filterHealth": 172800, "filterMaxHealth": 259200 }, "pump-b": { "enabled": 1, "filterHealth": 259200, "filterMaxHealth": 345600 }, "pump-c": { "enabled": 1, "filterHealth": 345600, "filterMaxHealth": 345600 }, "water-tank": { "water": 30000 }, "water-treatment": { "drinkingWater": 700, "resourceCleaner": 345600, "resourceChlorine": 345600, "resourceMinerals": 345600 } };
-var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 3000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "minShutdownDuration": 600, "maxShutdownDuration": 1200, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 2 }, "energy-capacitor": { "capacity": 1080000, "trickleCharge": 50 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 360000, "generatorThreshold": 0.25 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 1.25 }, "core": { "minEnergyRequired": 120, "maxEnergyRequired": 180, "minEnergyChangeInterval": 7200, "maxEnergyChangeInterval": 14400, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 150, "silentRunningPowerRequired": 70, "lockdownPowerRequired": 10, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200 }, "pump-b": { "maxProduction": 1900 }, "pump-c": { "maxProduction": 1200 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
+var config$1 = { "storage-matter": { "maxReleasedMatter": 500 }, "storage-antimatter": { "maxReleasedAntimatter": 500 }, "reactor": { "maxMatterInput": 500, "maxAntimatterInput": 500, "minTemperature": 25, "minOperatingTemperature": 100, "minOptimalTemperature": 1000, "maxOptimalTemperature": 2000, "maxOperatingTemperature": 3000, "maxEnergyGeneration": 300, "maxHeatGeneration": 2, "energyToHeatFactor": 0.02, "minShutdownDuration": 600, "maxShutdownDuration": 1200, "cooling": 0.5 }, "energy-distributor": { "outputBuffer": 200 }, "energy-converter": { "maxConversion": 100, "energyToPowerFactor": 2 }, "energy-capacitor": { "capacity": 1080000, "trickleCharge": 50 }, "power-distributor": { "minTemperature": 30, "maxTemperature": 200, "powerToHeatFactor": 0.01, "cooling": 0.19, "shutdownDuration": 10 }, "power-capacitor": { "capacity": 360000, "generatorThreshold": 0.25 }, "reactor-cooling": { "maxPowerConsumption": 10, "maxWaterConsumption": 3000, "maxCooling": 1.25 }, "core": { "minEnergyRequired": 120, "maxEnergyRequired": 180, "minEnergyChangeInterval": 7200, "maxEnergyChangeInterval": 14400, "nanitesConsumption": 1, "nanitesRegeneration": 3, "nanitesCapacity": 65500 }, "base": { "powerRequired": 150, "silentRunningPowerRequired": 70, "lockdownPowerRequired": 10, "drinkingWaterRequired": 1000 }, "pump-a": { "maxProduction": 3200, "powerConsumption": 10 }, "pump-b": { "maxProduction": 1900, "powerConsumption": 6 }, "pump-c": { "maxProduction": 1200, "powerConsumption": 4 }, "water-tank": { "capacity": 35000 }, "water-treatment": { "maxWaterConsumption": 1500, "maxPowerConsumption": 10, "drinkingWaterCapacity": 1000 } };
 var be13 = {
 	initial: initial$2,
 	config: config$1
@@ -1156,6 +1156,8 @@ var HOUR_TO_TICK$1 = 3600;
 
 function createPump(config, id) {
     var maxProduction = config.value(id, 'maxProduction') / HOUR_TO_TICK$1;
+    var powerConsumption = config.value(id, 'powerConsumption') / HOUR_TO_TICK$1;
+
     var initiallyEnabled = config.initial(id, 'enabled');
     var filterHealth = config.initial(id, 'filterHealth');
     var filterMaxHealth = config.initial(id, 'filterMaxHealth');
@@ -1175,18 +1177,30 @@ function createPump(config, id) {
                 enabled: initiallyEnabled,
                 filterHealth: filterHealth,
                 filterMaxHealth: filterMaxHealth,
-                water: 0
+                water: 0,
+                powerRequired: powerConsumption,
+                powerSatisfaction: 0
             };
         },
+        input: function input(prevState) {
+            return [{
+                stateMachine: POWER_CAPACITOR_ID,
+                property: 'power',
+                max: powerConsumption
+            }];
+        },
         update: function update(prevState, input) {
-            var efficiency = prevState.enabled ? clamp(prevState.filterHealth / prevState.filterMaxHealth, 0, 1) : 0;
+            var powerSatisfaction = clamp(input.power / powerConsumption, 0, 1);
+            var efficiency = prevState.enabled ? clamp(prevState.filterHealth / prevState.filterMaxHealth * powerSatisfaction, 0, 1) : 0;
 
             return {
                 maxProduction: prevState.maxProduction,
                 enabled: prevState.enabled ? 1 : 0,
                 filterHealth: prevState.enabled ? Math.max(prevState.filterHealth - 1, 0) : prevState.filterHealth,
                 filterMaxHealth: prevState.filterMaxHealth,
-                water: prevState.maxProduction * efficiency
+                water: prevState.maxProduction * efficiency,
+                powerRequired: prevState.powerRequired,
+                powerSatisfaction: powerSatisfaction
             };
         }
     };
