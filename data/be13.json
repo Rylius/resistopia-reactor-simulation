@@ -79,7 +79,7 @@
             "energyToPowerFactor": 2.5
         },
         "energy-capacitor": {
-            "capacity": 1080000,
+            "capacity": 4320000,
             "trickleCharge": 50
         },
         "power-distributor": {
