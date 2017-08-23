@@ -899,7 +899,7 @@ function createReactor(config) {
                 }
             }
 
-            globals.disableReactorCooling = +(state.heat < minOptimalTemperature);
+            globals.disableReactorCooling = +(state.heat < minOptimalTemperature && globals.camouflage > 0);
 
             return state;
         }

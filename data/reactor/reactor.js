@@ -132,7 +132,7 @@ export default function createReactor(config: Config): StateMachine {
                 }
             }
 
-            globals.disableReactorCooling = +(state.heat < minOptimalTemperature);
+            globals.disableReactorCooling = +(state.heat < minOptimalTemperature && globals.camouflage > 0);
 
             return state;
         },
