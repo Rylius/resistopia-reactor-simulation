@@ -70,7 +70,8 @@ export default function createCore(config: Config): StateMachine {
 
             if (disabled) {
                 energyRequired = 0;
-            } else if (nextEnergyChange <= 0) {
+            } else if (nextEnergyChange <= 0 || prevState.energyRequired <= 0) {
+                // FIXME Toggling core on/off would randomize the required energy each time
                 energyRequired = updateEnergyRequired();
                 nextEnergyChange = updateNextEnergyChange();
                 globals.resetMatterInput = 1;
