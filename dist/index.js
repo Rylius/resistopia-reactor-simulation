@@ -1190,7 +1190,7 @@ function createPump(config, id) {
             }];
         },
         update: function update(prevState, input) {
-            var powerSatisfaction = clamp(input.power / powerConsumption, 0, 1);
+            var powerSatisfaction = prevState.enabled ? clamp(input.power / powerConsumption, 0, 1) : 1;
             var efficiency = prevState.enabled ? clamp(prevState.filterHealth / prevState.filterMaxHealth * powerSatisfaction, 0, 1) : 0;
 
             return {

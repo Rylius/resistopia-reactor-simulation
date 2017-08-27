@@ -49,7 +49,7 @@ function createPump(config: Config, id: string): StateMachine {
             ];
         },
         update(prevState, input) {
-            const powerSatisfaction = clamp(input.power / powerConsumption, 0, 1);
+            const powerSatisfaction = prevState.enabled ? clamp(input.power / powerConsumption, 0, 1) : 1;
             const efficiency = prevState.enabled ? clamp((prevState.filterHealth / prevState.filterMaxHealth) * powerSatisfaction, 0, 1) : 0;
 
             return {
