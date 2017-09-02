@@ -86,7 +86,7 @@ export default function createCore(config: Config): StateMachine {
             return {
                 energyRequired,
                 nextEnergyChange,
-                nanites: clamp(prevState.nanites + (globals.camouflage ? nanitesRegeneration : -nanitesConsumption), 0, prevState.nanitesCapacity),
+                nanites: clamp(prevState.nanites + (globals.camouflage ? -nanitesConsumption : nanitesRegeneration), 0, prevState.nanitesCapacity),
                 nanitesCapacity: prevState.nanitesCapacity,
                 energyConsumed: energy,
                 energyFromReactor: input.energy,
