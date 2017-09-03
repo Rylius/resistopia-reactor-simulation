@@ -1458,7 +1458,7 @@ function createWaterTreatment(config) {
                 priority: -100
             }];
         },
-        update: function update(prevState, input) {
+        update: function update(prevState, input, globals) {
             var totalWater = prevState.water + input.water;
             var powerRequired = totalWater / maxWaterConsumption * maxPowerConsumption;
             var powerSatisfaction = powerRequired ? input.power / powerRequired : 0;
@@ -1468,8 +1468,8 @@ function createWaterTreatment(config) {
 
             var water = Math.max(totalWater - treatedWater, 0);
 
-            var requiredWater = Math.max(maxWaterConsumption - water, 0);
-            var requiredPower = clamp((water + requiredWater) / maxWaterConsumption, 0, 1) * maxPowerConsumption;
+            var requiredWater = globals.lockdown ? 0 : Math.max(maxWaterConsumption - water, 0);
+            var requiredPower = globals.lockdown ? 0 : clamp((water + requiredWater) / maxWaterConsumption, 0, 1) * maxPowerConsumption;
 
             return {
                 resourceCleaner: Math.max(prevState.resourceCleaner - efficiency, 0),
