@@ -111,7 +111,9 @@
             "powerRequired": 150,
             "silentRunningPowerRequired": 70,
             "lockdownPowerRequired": 10,
-            "drinkingWaterRequired": 1000
+            "drinkingWaterRequired": 1000,
+            "silentRunningDrinkingWaterRequired": 450,
+            "lockdownDrinkingWaterRequired": 100
         },
         "pump-a": {
             "maxProduction": 3200,

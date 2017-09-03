@@ -15,6 +15,8 @@ export default function createCore(config: Config): StateMachine {
     const powerRequiredSilentRunning = config.value(BASE_ID, 'silentRunningPowerRequired');
     const powerRequiredLockdown = config.value(BASE_ID, 'lockdownPowerRequired');
     const drinkingWaterRequired = config.value(BASE_ID, 'drinkingWaterRequired') / HOUR_TO_TICK;
+    const drinkingWaterRequiredSilentRunning = config.value(BASE_ID, 'silentRunningDrinkingWaterRequired') / HOUR_TO_TICK;
+    const drinkingWaterRequiredLockdown = config.value(BASE_ID, 'lockdownDrinkingWaterRequired') / HOUR_TO_TICK;
 
     return {
         id: BASE_ID,
@@ -42,11 +44,12 @@ export default function createCore(config: Config): StateMachine {
         },
         update(prevState, input, globals) {
             const requiredPower = globals.lockdown ? powerRequiredLockdown : (globals.silentRunning ? powerRequiredSilentRunning : powerRequired);
+            const requiredDrinkingWater = globals.lockdown ? drinkingWaterRequiredLockdown : (globals.silentRunning ? drinkingWaterRequiredSilentRunning : drinkingWaterRequired);
             return {
                 powerRequired: requiredPower,
                 powerSatisfaction: input.power / requiredPower,
-                drinkingWaterRequired: prevState.drinkingWaterRequired,
-                drinkingWaterSatisfaction: input.drinkingWater / prevState.drinkingWaterRequired,
+                drinkingWaterRequired: requiredDrinkingWater,
+                drinkingWaterSatisfaction: input.drinkingWater / requiredDrinkingWater,
             };
         },
     };
